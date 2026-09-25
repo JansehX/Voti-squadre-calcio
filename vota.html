@@ -1352,17 +1352,36 @@ function renderVoteForm() {
   const m = currentVoteMatch();
   const teamSelect = document.getElementById('vote-team-select');
   const selfId = document.getElementById('vote-self-select') ? document.getElementById('vote-self-select').value : '';
+  const btnInvia = document.querySelector('#vote-section .btn-primary'); 
+  
   if (!m || !selfId || !teamSelect) { container.innerHTML = ''; return; }
-  const list = (teamSelect.value === 'A' ? (m.teamA || []) : (m.teamB || [])).filter(p => p.id !== selfId);
-  if (list.length === 0) {
-    container.innerHTML = '<p class="empty-note">Nessun compagno da votare in questa squadra.</p>';
-    return;
-  }
-  container.innerHTML = list.map(p => `
-    <div class="check-row" style="justify-content:space-between;">
-      <span>${escapeHtml(p.name)}</span>
-      <input type="number" min="0" max="10" step="0.5" value="6" id="vote-input-${p.id}" style="width:64px;">
-    </div>`).join('');
+  
+  // Controllo localStorage: ha già votato per questa partita?
+  const localStorageKey = "ha_votato_" + m.id + "_" + selfId;
+  if (localStorage.getItem(localStorageKey) === "true") {
+    container.innerHTML = 'Hai già inviato i tuoi voti per questa partita.
+
+';
+if (btnInvia) btnInvia.style.display = "none";
+return;
+} else {
+if (btnInvia) btnInvia.style.display = "inline-block";
+}
+
+const list = (teamSelect.value === 'A' ? (m.teamA || []) : (m.teamB || [])).filter(p => p.id !== selfId);
+if (list.length === 0) {
+container.innerHTML = '
+
+Nessun compagno da votare in questa squadra.
+
+';
+return;
+}
+container.innerHTML = list.map(p => `
+
+${escapeHtml(p.name)}
+
+`).join('');
 }
 async function submitPerformanceVotes() {
   const m = currentVoteMatch();
@@ -1381,11 +1400,15 @@ async function submitPerformanceVotes() {
     ratings[p.id] = Math.max(0, Math.min(10, v));
   });
   const payload = { matchId: m.id, raterId: selfId, raterName, ratings, updatedAt: new Date().toISOString() };
+  
+  const localStorageKey = "ha_votato_" + m.id + "_" + selfId;
+
   if (db) {
     try {
       await db.collection('perf-votes').doc(m.id + '__' + selfId).set(payload);
       note.style.color = 'var(--accent)';
       note.textContent = 'Voti inviati, grazie!';
+      localStorage.setItem(localStorageKey, "true");
     } catch (e) {
       note.style.color = 'var(--danger)';
       note.textContent = 'Invio non riuscito, riprova.';
@@ -1397,10 +1420,15 @@ async function submitPerformanceVotes() {
     note.style.color = 'var(--accent)';
     note.textContent = 'Voti salvati su questo dispositivo, grazie!';
     renderVoteResults(m.id, Object.values(local).filter(v => v.matchId === m.id));
+    localStorage.setItem(localStorageKey, "true");
   }
+  
+  renderVoteForm();
+
   note.style.display = 'block';
   setTimeout(() => { note.style.display = 'none'; }, 3000);
 }
+
 function subscribeVoteResults(matchId) {
   if (voteUnsubscribe) { voteUnsubscribe(); voteUnsubscribe = null; }
   const container = document.getElementById('vote-results');
