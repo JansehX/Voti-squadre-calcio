@@ -283,6 +283,60 @@ details.player > summary::-webkit-details-marker { display: none; }
 </div>
 
 <script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBqeD1_lsv_IiPTIrpzQJ0kwM_d-wL8NZw",
+  authDomain: "voti-squadre-calcio.firebaseapp.com",
+  projectId: "voti-squadre-calcio",
+  storageBucket: "voti-squadre-calcio.firebasestorage.app",
+  messagingSenderId: "607569264976",
+  appId: "1:607569264976:web:1a2bb44258c3f7f8266c55"
+};
+
+// Firebase viene caricato solo se serve (import dinamico), così su claude.ai
+// - dove il caricamento da gstatic.com è bloccato - fallisce in silenzio
+// senza rompere il resto dello strumento, e su GitHub Pages funziona.
+async function tryFirebaseShim() {
+  try {
+    const [{ initializeApp }, firestoreMod] = await Promise.all([
+      import('https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js')
+    ]);
+    const { getFirestore, doc, getDoc, setDoc, collection, query, where, onSnapshot } = firestoreMod;
+    const fbApp = initializeApp(firebaseConfig);
+    const firestoreDb = getFirestore(fbApp);
+    return {
+      doc(path) {
+        const ref = doc(firestoreDb, path);
+        return {
+          async get() {
+            const snap = await getDoc(ref);
+            return { exists: snap.exists(), data: () => snap.data() };
+          },
+          async set(data) { return setDoc(ref, data); }
+        };
+      },
+      collection(name) {
+        return {
+          doc(id) {
+            const ref = doc(firestoreDb, name, id);
+            return { async set(data) { return setDoc(ref, data); } };
+          },
+          where(field, op, value) {
+            const q = query(collection(firestoreDb, name), where(field, op, value));
+            return {
+              onSnapshot(cb, errCb) {
+                return onSnapshot(q, snap => cb({ docs: snap.docs.map(d => ({ data: () => d.data() })) }), errCb);
+              }
+            };
+          }
+        };
+      }
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
 const ROSTER_KEY = 'squadre-roster-v1';
 const WEIGHTS_KEY = 'squadre-weights-v1';
 
@@ -355,8 +409,12 @@ function renderAll() {
 async function initSync() {
   let dbCap = null;
   try { dbCap = await window.claude.use('db'); } catch (e) { dbCap = null; }
-  if (!dbCap) return;
-  db = dbCap;
+  if (dbCap) {
+    db = dbCap;
+  } else {
+    db = await tryFirebaseShim();
+  }
+  if (!db) return;
   try {
     const snap = await db.doc('app/state').get();
     if (snap.exists) {
