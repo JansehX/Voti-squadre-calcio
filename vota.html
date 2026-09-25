@@ -1334,19 +1334,47 @@ function onVoteMatchChange() {
   }
   const nA = m.teamNames ? m.teamNames.A : 'Squadra A';
   const nB = m.teamNames ? m.teamNames.B : 'Squadra B';
-  teamSelect.innerHTML = `<option value="A">${escapeHtml(nA)}</option><option value="B">${escapeHtml(nB)}</option>`;
+  teamSelect.innerHTML = `${escapeHtml(nA)}${escapeHtml(nB)}`;
   onVoteTeamChange();
   subscribeVoteResults(m.id);
 }
+
 function onVoteTeamChange() {
   const m = currentVoteMatch();
   const teamSelect = document.getElementById('vote-team-select');
   const selfSelect = document.getElementById('vote-self-select');
-  if (!m || !teamSelect) { selfSelect.innerHTML = ''; renderVoteForm(); return; }
+  if (!m || !teamSelect || !selfSelect) { if (selfSelect) selfSelect.innerHTML = ''; renderVoteForm(); return; }
+  
   const list = teamSelect.value === 'A' ? (m.teamA || []) : (m.teamB || []);
-  selfSelect.innerHTML = list.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+  selfSelect.innerHTML = list.map(p => `${escapeHtml(p.name)}`).join('');
+  
+  // Controlla subito se il primo utente della lista ha già votato
+  checkIfAlreadyVotedAndLock();
   renderVoteForm();
 }
+
+// Funzione globale di controllo e blocco immediato
+function checkIfAlreadyVotedAndLock() {
+  const m = currentVoteMatch();
+  const selfSelect = document.getElementById('vote-self-select');
+  const teamSelect = document.getElementById('vote-team-select');
+  const btnInvia = document.querySelector('#vote-section .btn-primary');
+  
+  if (!m || !selfSelect) return;
+  const selfId = selfSelect.value;
+  const localStorageKey = "ha_votato_" + m.id + "_" + selfId;
+  
+  if (localStorage.getItem(localStorageKey) === "true") {
+    if (selfSelect) selfSelect.disabled = true;
+    if (teamSelect) teamSelect.disabled = true;
+    if (btnInvia) btnInvia.style.display = "none";
+  } else {
+    if (selfSelect) selfSelect.disabled = false;
+    if (teamSelect) teamSelect.disabled = false;
+    if (btnInvia) btnInvia.style.display = "inline-block";
+  }
+}
+
 function renderVoteForm() {
   const container = document.getElementById('vote-form');
   const m = currentVoteMatch();
@@ -1357,10 +1385,8 @@ function renderVoteForm() {
   
   if (!m || !selfId || !teamSelect) { container.innerHTML = ''; return; }
   
-  // Controllo localStorage: ha già votato per questa partita?
   const localStorageKey = "ha_votato_" + m.id + "_" + selfId;
   if (localStorage.getItem(localStorageKey) === "true") {
-    // Messaggio di conferma a schermo e blocco dei menu
     container.innerHTML = 'Voto registrato con successo!
 
 Hai già espresso le tue preferenze per questa partita. La selezione è bloccata.
@@ -1437,6 +1463,7 @@ renderVoteForm();
 
 note.style.display = 'block';
 setTimeout(() => { note.style.display = 'none'; }, 3000);
+}
 }
 
 function subscribeVoteResults(matchId) {
