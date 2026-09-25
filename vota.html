@@ -1351,7 +1351,8 @@ function renderVoteForm() {
   const container = document.getElementById('vote-form');
   const m = currentVoteMatch();
   const teamSelect = document.getElementById('vote-team-select');
-  const selfId = document.getElementById('vote-self-select') ? document.getElementById('vote-self-select').value : '';
+  const selfSelect = document.getElementById('vote-self-select');
+  const selfId = selfSelect ? selfSelect.value : '';
   const btnInvia = document.querySelector('#vote-section .btn-primary'); 
   
   if (!m || !selfId || !teamSelect) { container.innerHTML = ''; return; }
@@ -1359,12 +1360,19 @@ function renderVoteForm() {
   // Controllo localStorage: ha già votato per questa partita?
   const localStorageKey = "ha_votato_" + m.id + "_" + selfId;
   if (localStorage.getItem(localStorageKey) === "true") {
-    container.innerHTML = 'Hai già inviato i tuoi voti per questa partita.
+    // Messaggio di conferma a schermo e blocco dei menu
+    container.innerHTML = 'Voto registrato con successo!
+
+Hai già espresso le tue preferenze per questa partita. La selezione è bloccata.
 
 ';
+if (selfSelect) selfSelect.disabled = true;
+if (teamSelect) teamSelect.disabled = true;
 if (btnInvia) btnInvia.style.display = "none";
 return;
 } else {
+if (selfSelect) selfSelect.disabled = false;
+if (teamSelect) teamSelect.disabled = false;
 if (btnInvia) btnInvia.style.display = "inline-block";
 }
 
@@ -1383,50 +1391,52 @@ ${escapeHtml(p.name)}
 
 `).join('');
 }
+
 async function submitPerformanceVotes() {
-  const m = currentVoteMatch();
-  const teamSelect = document.getElementById('vote-team-select');
-  const selfId = document.getElementById('vote-self-select') ? document.getElementById('vote-self-select').value : '';
-  const note = document.getElementById('vote-saved-note');
-  if (!m || !selfId || !teamSelect) return;
-  const teamList = teamSelect.value === 'A' ? (m.teamA || []) : (m.teamB || []);
-  const raterName = (teamList.find(p => p.id === selfId) || {}).name || '—';
-  const list = teamList.filter(p => p.id !== selfId);
-  const ratings = {};
-  list.forEach(p => {
-    const input = document.getElementById('vote-input-' + p.id);
-    let v = parseFloat(input ? input.value : '6');
-    if (isNaN(v)) v = 6;
-    ratings[p.id] = Math.max(0, Math.min(10, v));
-  });
-  const payload = { matchId: m.id, raterId: selfId, raterName, ratings, updatedAt: new Date().toISOString() };
-  
-  const localStorageKey = "ha_votato_" + m.id + "_" + selfId;
+const m = currentVoteMatch();
+const teamSelect = document.getElementById('vote-team-select');
+const selfSelect = document.getElementById('vote-self-select');
+const selfId = selfSelect ? selfSelect.value : '';
+const note = document.getElementById('vote-saved-note');
+if (!m || !selfId || !teamSelect) return;
+const teamList = teamSelect.value === 'A' ? (m.teamA || []) : (m.teamB || []);
+const raterName = (teamList.find(p => p.id === selfId) || {}).name || '—';
+const list = teamList.filter(p => p.id !== selfId);
+const ratings = {};
+list.forEach(p => {
+const input = document.getElementById('vote-input-' + p.id);
+let v = parseFloat(input ? input.value : '6');
+if (isNaN(v)) v = 6;
+ratings[p.id] = Math.max(0, Math.min(10, v));
+});
+const payload = { matchId: m.id, raterId: selfId, raterName, ratings, updatedAt: new Date().toISOString() };
 
-  if (db) {
-    try {
-      await db.collection('perf-votes').doc(m.id + '__' + selfId).set(payload);
-      note.style.color = 'var(--accent)';
-      note.textContent = 'Voti inviati, grazie!';
-      localStorage.setItem(localStorageKey, "true");
-    } catch (e) {
-      note.style.color = 'var(--danger)';
-      note.textContent = 'Invio non riuscito, riprova.';
-    }
-  } else {
-    const local = loadLocalVotes();
-    local[m.id + '__' + selfId] = payload;
-    saveLocalVotes(local);
-    note.style.color = 'var(--accent)';
-    note.textContent = 'Voti salvati su questo dispositivo, grazie!';
-    renderVoteResults(m.id, Object.values(local).filter(v => v.matchId === m.id));
-    localStorage.setItem(localStorageKey, "true");
-  }
-  
-  renderVoteForm();
+const localStorageKey = "ha_votato_" + m.id + "_" + selfId;
 
-  note.style.display = 'block';
-  setTimeout(() => { note.style.display = 'none'; }, 3000);
+if (db) {
+try {
+await db.collection('perf-votes').doc(m.id + '' + selfId).set(payload);
+note.style.color = 'var(--accent)';
+note.textContent = 'Voti inviati, grazie!';
+localStorage.setItem(localStorageKey, "true");
+} catch (e) {
+note.style.color = 'var(--danger)';
+note.textContent = 'Invio non riuscito, riprova.';
+}
+} else {
+const local = loadLocalVotes();
+local[m.id + '' + selfId] = payload;
+saveLocalVotes(local);
+note.style.color = 'var(--accent)';
+note.textContent = 'Voti salvati su questo dispositivo, grazie!';
+renderVoteResults(m.id, Object.values(local).filter(v => v.matchId === m.id));
+localStorage.setItem(localStorageKey, "true");
+}
+
+renderVoteForm();
+
+note.style.display = 'block';
+setTimeout(() => { note.style.display = 'none'; }, 3000);
 }
 
 function subscribeVoteResults(matchId) {
