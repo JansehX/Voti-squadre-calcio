@@ -152,18 +152,12 @@ details.player > summary::-webkit-details-marker { display: none; }
       <button class="btn-primary" onclick="addPlayer()">Aggiungi</button>
     </div>
     <details style="margin-top:14px; border-top:1px solid var(--border); padding-top:10px;">
-      <summary style="cursor:pointer; font-size:13px; color:var(--text-secondary);">Trasferisci dati da/verso un altro link</summary>
-      <p class="hint" style="margin-top:8px;">Usalo per copiare rosa, pesi, partite e voti da un link a un altro (es. da claude.ai a GitHub).</p>
+      <summary style="cursor:pointer; font-size:13px; color:var(--text-secondary);">Strumenti amministratore</summary>
+      <p class="hint" style="margin-top:8px;">Visibile solo qui, non nella pagina di voto condivisa con gli amici.</p>
       <div class="row" style="gap:8px; margin-top:6px;">
-        <button class="btn-ghost" onclick="exportAllData()">Esporta dati</button>
-        <button class="btn-ghost" onclick="showImportBox()">Importa dati</button>
+        <button class="btn-danger-ghost" onclick="clearAllVotesClick()">Cancella tutti i voti</button>
       </div>
-      <textarea id="data-transfer-box" style="display:none; width:100%; height:110px; margin-top:8px; font-family:monospace; font-size:11px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); padding:8px;"></textarea>
-      <div class="row" id="import-confirm-row" style="display:none; margin-top:8px; gap:8px;">
-        <button class="btn-primary" onclick="confirmImport()">Conferma importazione</button>
-        <button class="btn-ghost" onclick="hideDataTransferBox()">Annulla</button>
-      </div>
-      <p class="hint" id="data-transfer-note" style="display:none;"></p>
+      <p class="hint" id="clear-votes-note" style="display:none;"></p>
     </details>
   </section>
 
@@ -316,7 +310,7 @@ async function tryFirebaseShim() {
       import('https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js'),
       import('https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js')
     ]);
-    const { getFirestore, doc, getDoc, setDoc, collection, query, where, onSnapshot } = firestoreMod;
+    const { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs, query, where, onSnapshot } = firestoreMod;
     const fbApp = initializeApp(firebaseConfig);
     const firestoreDb = getFirestore(fbApp);
     return {
@@ -334,7 +328,14 @@ async function tryFirebaseShim() {
         return {
           doc(id) {
             const ref = doc(firestoreDb, name, id);
-            return { async set(data) { return setDoc(ref, data); } };
+            return {
+              async set(data) { return setDoc(ref, data); },
+              async delete() { return deleteDoc(ref); }
+            };
+          },
+          async get() {
+            const snap = await getDocs(collection(firestoreDb, name));
+            return { docs: snap.docs.map(d => ({ id: d.id, data: () => d.data() })) };
           },
           where(field, op, value) {
             const q = query(collection(firestoreDb, name), where(field, op, value));
@@ -1323,6 +1324,35 @@ function applyVoteLockState() {
   } else {
     lockNote.style.display = 'none';
   }
+}
+async function clearAllVotesClick() {
+  const note = document.getElementById('clear-votes-note');
+  if (!window.confirm('Cancellare tutti i voti di prestazione salvati finora? Non si può annullare.')) return;
+  note.style.display = 'block';
+  note.style.color = 'var(--text-secondary)';
+  note.textContent = 'Cancellazione in corso…';
+  let ok = true;
+  if (db) {
+    try {
+      const colRef = db.collection('perf-votes');
+      const snap = await colRef.get();
+      await Promise.all(snap.docs.map(d => colRef.doc(d.id).delete()));
+    } catch (e) {
+      console.error('Errore cancellando i voti su Firestore/db:', e);
+      ok = false;
+    }
+  }
+  saveLocalVotes({});
+  votedMatches = {};
+  saveVotedMatches();
+  const cm = currentVoteMatch();
+  if (cm) subscribeVoteResults(cm.id);
+  applyVoteLockState();
+  note.style.color = ok ? 'var(--accent)' : 'var(--danger)';
+  note.textContent = ok
+    ? 'Tutti i voti sono stati cancellati.'
+    : 'Voti locali cancellati, ma la cancellazione condivisa non è riuscita del tutto: riprova o controlla la console Firebase.';
+  setTimeout(() => { note.style.display = 'none'; }, 4000);
 }
 function loadLocalVotes() {
   try {
