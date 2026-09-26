@@ -1539,15 +1539,18 @@ function renderVoteResults(matchId, voteDocs) {
 
 function applyVoteOnlyMode() {
   if (window.location.hash.replace('#', '') !== 'vota=1') return;
+  const visibleIds = ['rankings-section', 'history-section', 'vote-section'];
   document.querySelectorAll('section.card').forEach(sec => {
-    if (sec.id !== 'vote-section') sec.style.display = 'none';
+    if (!visibleIds.includes(sec.id)) sec.style.display = 'none';
   });
   const h1 = document.querySelector('.wrap h1');
   const subtitle = document.querySelector('.subtitle');
   if (h1) h1.textContent = 'Voto della prestazione';
-  if (subtitle) subtitle.textContent = 'Vota da 0 a 10 i tuoi compagni di squadra per la partita di oggi.';
-  const stepNum = document.querySelector('#vote-section .step-num');
-  if (stepNum) stepNum.style.display = 'none';
+  if (subtitle) subtitle.textContent = 'Classifiche, storico partite e voto ai compagni di squadra.';
+  visibleIds.forEach(id => {
+    const stepNum = document.querySelector(`#${id} .step-num`);
+    if (stepNum) stepNum.style.display = 'none';
+  });
   const linkRow = document.getElementById('vote-link-copied');
   if (linkRow && linkRow.closest('.row')) linkRow.closest('.row').style.display = 'none';
 }
