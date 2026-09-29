@@ -218,6 +218,10 @@ details.player > summary::-webkit-details-marker { display: none; }
     </div>
     <div class="diff-line" id="diff-line"></div>
     <p class="swap-hint">Tocca un giocatore in ciascuna squadra per scambiarli manualmente.</p>
+    <div class="row" style="justify-content:center; margin-top:12px;">
+      <button class="btn-primary" onclick="quickSaveMatch()">Salva questa partita (senza risultato)</button>
+    </div>
+    <p class="hint" style="text-align:center; margin-top:6px;">Potrai aggiungere gol, assist e MVP in qualsiasi momento dallo Storico partite (sezione 9), con "Modifica".</p>
   </section>
 
   <section class="card" id="pitch-section">
@@ -228,7 +232,7 @@ details.player > summary::-webkit-details-marker { display: none; }
 
   <section class="card" id="stats-section">
     <h2><span class="step-num">6</span>Marcatori e assist della giornata</h2>
-    <p class="hint">Segna gol, assist e chi è stato l'MVP tra i giocatori selezionati in "Partita di oggi".</p>
+    <p class="hint">Segna gol, assist e chi è stato l'MVP tra i giocatori selezionati in "Partita di oggi", poi salva qui — oppure, se hai già salvato la partita dalla sezione 4, aggiungi questi dati più tardi dallo Storico partite con "Modifica".</p>
     <div class="row" style="gap:8px; margin-bottom:12px;">
       <label for="match-date" style="white-space:nowrap;">Data della partita:</label>
       <input type="date" id="match-date" style="width:auto;">
@@ -393,6 +397,7 @@ function loadTeamMeta() {
 }
 let teamMeta = loadTeamMeta();
 let currentTeams = null;
+let lastSavedTeamsRef = null;
 let swapSelection = null;
 let db = null;
 let dbSaveInFlight = null;
@@ -965,12 +970,24 @@ function setMvp(id) {
   mvpDraftId = id;
   renderStats();
 }
+function quickSaveMatch() {
+  saveMatch();
+  const historySection = document.getElementById('history-section');
+  if (historySection) historySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 function saveMatch() {
   const ids = Array.from(selectedIds);
   if (ids.length === 0) return;
   const note = document.getElementById('stats-saved-note');
   if (!saveButtonReady()) {
     updateSaveButtonState();
+    return;
+  }
+  if (currentTeams === lastSavedTeamsRef) {
+    note.style.color = 'var(--accent)';
+    note.textContent = 'Questa partita è già stata salvata. Per salvarne un\'altra, genera di nuovo le squadre.';
+    note.style.display = 'block';
+    setTimeout(() => { note.style.display = 'none'; }, 3500);
     return;
   }
   const entries = {};
@@ -988,6 +1005,7 @@ function saveMatch() {
     teamA: snapshotOf(currentTeams.teamA),
     teamB: snapshotOf(currentTeams.teamB)
   });
+  lastSavedTeamsRef = currentTeams;
   saveMatches();
   try {
     generateSuggestions(entries);
