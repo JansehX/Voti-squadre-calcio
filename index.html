@@ -249,7 +249,14 @@ details.player > summary::-webkit-details-marker { display: none; }
     <h2><span class="step-num">7</span>Classifiche</h2>
     <div class="teams-grid">
       <div class="team-col">
-        <div class="team-head"><h3>Marcatori (gol+assist)</h3></div>
+        <div class="team-head" style="flex-wrap:wrap; gap:6px;">
+          <h3>Marcatori</h3>
+          <select id="scorer-ranking-mode" onchange="renderRankings()" style="width:auto; font-size:12px; padding:4px 6px; border-radius:6px; border:1px solid var(--border); background:var(--surface-2); color:var(--text);">
+            <option value="combined">Gol+Assist</option>
+            <option value="goals">Solo gol</option>
+            <option value="assists">Solo assist</option>
+          </select>
+        </div>
         <div id="ranking-scorers"></div>
       </div>
       <div class="team-col">
@@ -1046,10 +1053,22 @@ function computeAggregates() {
 
 function renderRankings() {
   const agg = computeAggregates();
-  const scorers = roster.map(p => ({ id: p.id, name: p.name, goals: agg[p.id]?.goals || 0, assists: agg[p.id]?.assists || 0 }))
-    .map(x => ({ ...x, points: x.goals + x.assists }))
-    .filter(x => x.points > 0)
-    .sort((a, b) => b.points - a.points || b.goals - a.goals);
+  const modeSelect = document.getElementById('scorer-ranking-mode');
+  const mode = modeSelect ? modeSelect.value : 'combined';
+  const base = roster.map(p => ({ id: p.id, name: p.name, goals: agg[p.id]?.goals || 0, assists: agg[p.id]?.assists || 0 }))
+    .map(x => ({ ...x, points: x.goals + x.assists }));
+  let scorers;
+  let valueLabel;
+  if (mode === 'goals') {
+    scorers = base.filter(x => x.goals > 0).sort((a, b) => b.goals - a.goals);
+    valueLabel = s => `${s.goals} gol`;
+  } else if (mode === 'assists') {
+    scorers = base.filter(x => x.assists > 0).sort((a, b) => b.assists - a.assists);
+    valueLabel = s => `${s.assists} assist`;
+  } else {
+    scorers = base.filter(x => x.points > 0).sort((a, b) => b.points - a.points || b.goals - a.goals);
+    valueLabel = s => `${s.points} (${s.goals}G+${s.assists}A)`;
+  }
   const mvpList = roster.map(p => ({ id: p.id, name: p.name, mvp: agg[p.id]?.mvp || 0 }))
     .filter(x => x.mvp > 0)
     .sort((a, b) => b.mvp - a.mvp);
@@ -1058,7 +1077,7 @@ function renderRankings() {
   scorersEl.innerHTML = scorers.length ? scorers.map((s, i) => `
     <div class="team-card" style="cursor:default;">
       <span>${i + 1}. ${escapeHtml(s.name)}</span>
-      <span>${s.points} (${s.goals}G+${s.assists}A)</span>
+      <span>${valueLabel(s)}</span>
     </div>`).join('') : '<p class="empty-note">Nessun dato ancora: salva una partita per iniziare.</p>';
 
   const mvpEl = document.getElementById('ranking-mvp');
@@ -1253,7 +1272,7 @@ function renderHistory() {
     const colorB = m.teamColors ? m.teamColors.B : '#b8842e';
     const teamA = m.teamA || [];
     const teamB = m.teamB || [];
-    const isEditing = editingMatchId === m.id;
+    const isEditing = editingMatchId === m.id && !isVoteOnlyMode;
 
     if (isEditing) {
       const isoDate = new Date(m.date).toISOString().slice(0, 10);
@@ -1315,8 +1334,9 @@ function renderHistory() {
           <span class="player-name">${dateStr}</span>
           <span class="row" style="gap:10px;">
             <span style="font-size:12px; color:var(--text-muted);">${escapeHtml(namesA)} <strong style="color:var(--text);">${golA}-${golB}</strong> ${escapeHtml(namesB)}</span>
+            ${isVoteOnlyMode ? '' : `
             <button class="btn-ghost" style="padding:5px 9px; font-size:12px;" onclick="event.preventDefault(); event.stopPropagation(); startMatchEdit('${m.id}')">Modifica</button>
-            <button class="btn-danger-ghost" onclick="event.preventDefault(); event.stopPropagation(); deleteMatch('${m.id}')">Elimina</button>
+            <button class="btn-danger-ghost" onclick="event.preventDefault(); event.stopPropagation(); deleteMatch('${m.id}')">Elimina</button>`}
           </span>
         </summary>
         <div class="player-body">
@@ -1333,6 +1353,7 @@ function renderHistory() {
   }).join('');
 }
 function startMatchEdit(id) {
+  if (isVoteOnlyMode) return;
   editingMatchId = id;
   renderHistory();
 }
@@ -1341,6 +1362,7 @@ function cancelMatchEdit() {
   renderHistory();
 }
 function saveMatchEdit(id) {
+  if (isVoteOnlyMode) return;
   const m = matches.find(x => x.id === id);
   if (!m) return;
   const dateInput = document.getElementById('edit-date-' + id);
@@ -1366,6 +1388,7 @@ function saveMatchEdit(id) {
   renderRankings();
 }
 function deleteMatch(id) {
+  if (isVoteOnlyMode) return;
   matches = matches.filter(m => m.id !== id);
   saveMatches();
   renderHistory();
