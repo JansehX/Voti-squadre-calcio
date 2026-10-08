@@ -264,26 +264,32 @@ details.player > summary::-webkit-details-marker { display: none; }
         <div id="ranking-mvp"></div>
       </div>
     </div>
-    <div class="macro-block" style="margin-top:14px;">
-      <div class="macro-title">Media prestazione generale (tutte le partite)</div>
-      <div id="ranking-performance"></div>
-    </div>
+  </section>
+
+  <section class="card" id="performance-section">
+    <h2><span class="step-num">8</span>Media prestazione generale</h2>
+    <p class="hint">Media di tutti i voti ricevuti dai compagni, su tutte le partite votate finora — non solo l'ultima.</p>
+    <div id="ranking-performance"></div>
   </section>
 
   <section class="card" id="suggestions-section">
-    <h2><span class="step-num">8</span>Suggerimenti aumento statistiche</h2>
-    <p class="hint">In base a gol e assist dell'ultima partita salvata, ecco le modifiche proposte ai voti tecnici. Puoi accettarle così come sono, cambiare il valore prima di applicarle, oppure ignorarle.</p>
+    <h2><span class="step-num">9</span>Suggerimenti aumento statistiche</h2>
+    <p class="hint">In base a gol, assist e voti dei compagni, ecco le modifiche proposte ai voti tecnici. Puoi accettarle così come sono, cambiare il valore prima di applicarle, oppure ignorarle.</p>
+    <div class="row" style="margin-bottom:10px;">
+      <button class="btn-ghost" onclick="generateSuggestionsFromOverallVotes()">Genera suggerimenti dalla media generale dei voti</button>
+    </div>
+    <p class="hint" id="overall-suggest-note" style="display:none;"></p>
     <div id="suggestions-list"></div>
   </section>
 
   <section class="card" id="history-section">
-    <h2><span class="step-num">9</span>Storico partite</h2>
+    <h2><span class="step-num">10</span>Storico partite</h2>
     <p class="hint">Ogni partita salvata, con le squadre formate quel giorno e le statistiche registrate.</p>
     <div id="history-list"></div>
   </section>
 
   <section class="card" id="vote-section">
-    <h2><span class="step-num">10</span>Voto della prestazione tra amici</h2>
+    <h2><span class="step-num">11</span>Voto della prestazione tra amici</h2>
     <p class="hint">Condividi questo link con chi ha giocato: ognuno sceglie la partita, la propria squadra e se stesso, poi vota da 0 a 10 la prestazione dei compagni. Non tocca i voti tecnici della rosa.</p>
     <p class="hint" id="vote-mode-note" style="display:none;"></p>
     <div class="row" style="margin-bottom:14px;">
@@ -1226,6 +1232,21 @@ function renderSuggestions() {
   container.innerHTML = suggestions.map(s => {
     const p = roster.find(pl => pl.id === s.playerId);
     const name = p ? p.name : '—';
+    if (s.subId === 'ALL') {
+      const sign = s.adjustment >= 0 ? '+' : '';
+      return `
+        <div class="check-row" style="justify-content:space-between; flex-wrap:wrap; gap:8px;">
+          <span style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+            <strong>${escapeHtml(name)}</strong> — ${s.label}:
+            <input type="number" step="0.05" value="${s.adjustment}" id="sugg-input-${s.id}" style="width:64px;"> su ogni voto
+            <span style="font-size:11px; color:var(--text-muted);">(${escapeHtml(s.reason)})</span>
+          </span>
+          <span class="row" style="gap:6px;">
+            <button class="btn-primary" style="padding:6px 10px; font-size:12px;" onclick="applySuggestion('${s.id}')">Applica</button>
+            <button class="btn-danger-ghost" onclick="dismissSuggestion('${s.id}')">Ignora</button>
+          </span>
+        </div>`;
+    }
     return `
       <div class="check-row" style="justify-content:space-between; flex-wrap:wrap; gap:8px;">
         <span style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
@@ -1244,12 +1265,21 @@ function applySuggestion(id) {
   const s = suggestions.find(x => x.id === id);
   if (!s) return;
   const input = document.getElementById('sugg-input-' + id);
-  let v = parseFloat(input ? input.value : s.suggested);
-  if (isNaN(v)) v = s.suggested;
-  v = Math.max(0, Math.min(10, v));
   const p = roster.find(pl => pl.id === s.playerId);
   if (p) {
-    p.votes[s.subId] = v;
+    if (s.subId === 'ALL') {
+      let adj = parseFloat(input ? input.value : s.adjustment);
+      if (isNaN(adj)) adj = s.adjustment;
+      allSubIds().forEach(catId => {
+        const cur = (typeof p.votes[catId] === 'number') ? p.votes[catId] : 5;
+        p.votes[catId] = Math.max(0, Math.min(10, +(cur + adj).toFixed(2)));
+      });
+    } else {
+      let v = parseFloat(input ? input.value : s.suggested);
+      if (isNaN(v)) v = s.suggested;
+      v = Math.max(0, Math.min(10, v));
+      p.votes[s.subId] = v;
+    }
     saveRoster();
     renderRoster();
   }
@@ -1705,6 +1735,50 @@ function subscribeOverallPerformance() {
     container.innerHTML = '<p class="empty-note">Impossibile leggere i voti in questo momento.</p>';
   }
 }
+async function generateSuggestionsFromOverallVotes() {
+  const note = document.getElementById('overall-suggest-note');
+  let voteDocs = [];
+  if (db) {
+    try {
+      const snap = await db.collection('perf-votes').get();
+      voteDocs = snap.docs.map(d => d.data());
+    } catch (e) { console.error('Errore leggendo i voti per i suggerimenti generali:', e); }
+  }
+  if (voteDocs.length === 0) {
+    const local = loadLocalVotes();
+    voteDocs = Object.values(local);
+  }
+  const totals = computeOverallPerformance(voteDocs);
+  let created = 0;
+  roster.forEach(p => {
+    const t = totals[p.id];
+    if (!t || t.count === 0) return;
+    const avg = t.sum / t.count;
+    const already = suggestions.some(s => s.sourceMatchId === 'overall' && s.subId === 'ALL' && s.playerId === p.id);
+    if (already) return;
+    let adjustment = (avg - 6) * 0.15;
+    adjustment = Math.max(-0.5, Math.min(0.5, +adjustment.toFixed(2)));
+    if (Math.abs(adjustment) < 0.05) return;
+    suggestions.push({
+      id: 'sgo' + Date.now() + Math.random().toString(16).slice(2),
+      playerId: p.id, subId: 'ALL', label: 'Tutte le categorie',
+      adjustment,
+      reason: `media generale voti compagni: ${avg.toFixed(2)} (${t.count} voti totali, tutte le partite)`,
+      sourceMatchId: 'overall'
+    });
+    created++;
+  });
+  saveSuggestions();
+  renderSuggestions();
+  if (note) {
+    note.style.display = 'block';
+    note.style.color = 'var(--accent)';
+    note.textContent = created > 0
+      ? `${created} suggerimento/i aggiunto/i qui sotto.`
+      : 'Nessun nuovo suggerimento: medie nella norma o già proposte in precedenza.';
+    setTimeout(() => { note.style.display = 'none'; }, 4000);
+  }
+}
 function renderVoteResults(matchId, voteDocs) {
   const container = document.getElementById('vote-results');
   const m = matches.find(mm => mm.id === matchId);
@@ -1773,19 +1847,17 @@ function generateSuggestionsFromVotes(matchId) {
       const t = totals[p.id];
       if (!t || t.count === 0) return;
       const avg = t.sum / t.count;
-      const already = suggestions.some(s => s.sourceMatchId === matchId && s.subId === 'pressione' && s.playerId === p.id);
+      const already = suggestions.some(s => s.sourceMatchId === matchId && s.subId === 'ALL' && s.playerId === p.id);
       if (already) return;
       const rp = roster.find(pl => pl.id === p.id);
       if (!rp) return;
-      const current = (typeof rp.votes.pressione === 'number') ? rp.votes.pressione : 5;
       let adjustment = (avg - 6) * 0.15;
-      adjustment = Math.max(-0.5, Math.min(0.5, adjustment));
+      adjustment = Math.max(-0.5, Math.min(0.5, +adjustment.toFixed(2)));
       if (Math.abs(adjustment) < 0.05) return;
-      const proposed = Math.max(0, Math.min(10, +(current + adjustment).toFixed(2)));
       suggestions.push({
         id: 'sgv' + Date.now() + Math.random().toString(16).slice(2),
-        playerId: p.id, subId: 'pressione', label: 'Gestione della pressione',
-        current, suggested: proposed,
+        playerId: p.id, subId: 'ALL', label: 'Tutte le categorie',
+        adjustment,
         reason: `voto medio compagni ${avg.toFixed(2)} (${t.count} voti) — partita del ${dateStr}`,
         sourceMatchId: matchId
       });
@@ -1797,7 +1869,7 @@ function generateSuggestionsFromVotes(matchId) {
       note.style.display = 'block';
       note.style.color = 'var(--accent)';
       note.textContent = created > 0
-        ? `${created} suggerimento/i aggiunto/i alla sezione 8.`
+        ? `${created} suggerimento/i aggiunto/i alla sezione 9.`
         : 'Nessun nuovo suggerimento: i voti sono nella media o già proposti in precedenza.';
       setTimeout(() => { note.style.display = 'none'; }, 4000);
     }
@@ -1807,7 +1879,7 @@ function generateSuggestionsFromVotes(matchId) {
 let isVoteOnlyMode = false;
 function applyVoteOnlyMode() {
   isVoteOnlyMode = true;
-  const visibleIds = ['rankings-section', 'history-section', 'vote-section'];
+  const visibleIds = ['rankings-section', 'performance-section', 'history-section', 'vote-section'];
   document.querySelectorAll('section.card').forEach(sec => {
     if (!visibleIds.includes(sec.id)) sec.style.display = 'none';
   });
