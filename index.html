@@ -268,7 +268,7 @@ details.player > summary::-webkit-details-marker { display: none; }
 
   <section class="card" id="performance-section">
     <h2><span class="step-num">8</span>Media prestazione generale</h2>
-    <p class="hint">Media di tutti i voti ricevuti dai compagni, su tutte le partite votate finora — non solo l'ultima.</p>
+    <p class="hint">Media di tutti i voti ricevuti dai compagni, su tutte le partite votate finora. È una media "pesata": chi ha ricevuto pochi voti resta segnato come provvisorio.</p>
     <div id="ranking-performance"></div>
   </section>
 
@@ -1703,19 +1703,45 @@ function computeOverallPerformance(voteDocs) {
   });
   return totals;
 }
+const PRIOR_WEIGHT = 5;        // quanto "pesa" la media del gruppo come punto di partenza (circa i voti di una partita)
+const PROVISIONAL_BELOW = 5;   // sotto questo numero di voti la media è segnata come provvisoria
+function weightedAverages(totals) {
+  let sumAll = 0, countAll = 0;
+  Object.keys(totals).forEach(id => { sumAll += totals[id].sum; countAll += totals[id].count; });
+  const groupMean = countAll > 0 ? sumAll / countAll : 6;
+  const out = {};
+  Object.keys(totals).forEach(id => {
+    const t = totals[id];
+    if (!t || t.count === 0) return;
+    out[id] = {
+      raw: t.sum / t.count,
+      count: t.count,
+      weighted: (PRIOR_WEIGHT * groupMean + t.sum) / (PRIOR_WEIGHT + t.count),
+      groupMean
+    };
+  });
+  return out;
+}
 function renderOverallPerformance(totals) {
   const container = document.getElementById('ranking-performance');
   if (!container) return;
+  const stats = weightedAverages(totals);
   const rows = roster.map(p => {
-    const t = totals[p.id];
-    if (!t || t.count === 0) return null;
-    return { name: p.name, avg: t.sum / t.count, count: t.count };
-  }).filter(Boolean).sort((a, b) => b.avg - a.avg);
-  container.innerHTML = rows.length ? rows.map((r, i) => `
+    const s = stats[p.id];
+    if (!s) return null;
+    return { name: p.name, ...s };
+  }).filter(Boolean).sort((a, b) => b.weighted - a.weighted);
+  if (rows.length === 0) {
+    container.innerHTML = '<p class="empty-note">Nessun voto ancora.</p>';
+    return;
+  }
+  const groupMean = rows[0].groupMean;
+  container.innerHTML = rows.map((r, i) => `
     <div class="team-card" style="cursor:default;">
-      <span>${i + 1}. ${escapeHtml(r.name)}</span>
-      <span>${r.avg.toFixed(2)} (${r.count} voti)</span>
-    </div>`).join('') : '<p class="empty-note">Nessun voto ancora.</p>';
+      <span>${i + 1}. ${escapeHtml(r.name)}${r.count < PROVISIONAL_BELOW ? ' <span style="font-size:10px; color:var(--gold); border:1px solid var(--gold); border-radius:4px; padding:1px 4px; margin-left:4px;">provvisoria</span>' : ''}</span>
+      <span><strong>${r.weighted.toFixed(2)}</strong> <span style="color:var(--text-muted); font-size:11px;">(grezza ${r.raw.toFixed(2)} · ${r.count} ${r.count === 1 ? 'voto' : 'voti'})</span></span>
+    </div>`).join('') + `
+    <p class="hint" style="margin-top:8px;">Media del gruppo: ${groupMean.toFixed(2)}. Il valore in grassetto è corretto in base a quanti voti ha ricevuto ciascuno: con pochi voti si avvicina alla media del gruppo, con tanti voti coincide con la media vera.</p>`;
 }
 function subscribeOverallPerformance() {
   if (overallPerfUnsubscribe) { overallPerfUnsubscribe(); overallPerfUnsubscribe = null; }
@@ -1748,22 +1774,21 @@ async function generateSuggestionsFromOverallVotes() {
     const local = loadLocalVotes();
     voteDocs = Object.values(local);
   }
-  const totals = computeOverallPerformance(voteDocs);
+  const stats = weightedAverages(computeOverallPerformance(voteDocs));
   let created = 0;
   roster.forEach(p => {
-    const t = totals[p.id];
-    if (!t || t.count === 0) return;
-    const avg = t.sum / t.count;
-    const already = suggestions.some(s => s.sourceMatchId === 'overall' && s.subId === 'ALL' && s.playerId === p.id);
+    const s = stats[p.id];
+    if (!s) return;
+    const already = suggestions.some(x => x.sourceMatchId === 'overall' && x.subId === 'ALL' && x.playerId === p.id);
     if (already) return;
-    let adjustment = (avg - 6) * 0.15;
+    let adjustment = (s.weighted - 6) * 0.15;
     adjustment = Math.max(-0.5, Math.min(0.5, +adjustment.toFixed(2)));
     if (Math.abs(adjustment) < 0.05) return;
     suggestions.push({
       id: 'sgo' + Date.now() + Math.random().toString(16).slice(2),
       playerId: p.id, subId: 'ALL', label: 'Tutte le categorie',
       adjustment,
-      reason: `media generale voti compagni: ${avg.toFixed(2)} (${t.count} voti totali, tutte le partite)`,
+      reason: `media pesata ${s.weighted.toFixed(2)} (grezza ${s.raw.toFixed(2)}, ${s.count} ${s.count === 1 ? 'voto' : 'voti'}${s.count < PROVISIONAL_BELOW ? ', provvisoria' : ''})`,
       sourceMatchId: 'overall'
     });
     created++;
@@ -1843,22 +1868,22 @@ function generateSuggestionsFromVotes(matchId) {
       });
     });
     const dateStr = new Date(m.date).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' });
+    const stats = weightedAverages(totals);
     allPlayers.forEach(p => {
-      const t = totals[p.id];
-      if (!t || t.count === 0) return;
-      const avg = t.sum / t.count;
-      const already = suggestions.some(s => s.sourceMatchId === matchId && s.subId === 'ALL' && s.playerId === p.id);
+      const s = stats[p.id];
+      if (!s) return;
+      const already = suggestions.some(x => x.sourceMatchId === matchId && x.subId === 'ALL' && x.playerId === p.id);
       if (already) return;
       const rp = roster.find(pl => pl.id === p.id);
       if (!rp) return;
-      let adjustment = (avg - 6) * 0.15;
+      let adjustment = (s.weighted - 6) * 0.15;
       adjustment = Math.max(-0.5, Math.min(0.5, +adjustment.toFixed(2)));
       if (Math.abs(adjustment) < 0.05) return;
       suggestions.push({
         id: 'sgv' + Date.now() + Math.random().toString(16).slice(2),
         playerId: p.id, subId: 'ALL', label: 'Tutte le categorie',
         adjustment,
-        reason: `voto medio compagni ${avg.toFixed(2)} (${t.count} voti) — partita del ${dateStr}`,
+        reason: `media pesata ${s.weighted.toFixed(2)} (grezza ${s.raw.toFixed(2)}, ${s.count} ${s.count === 1 ? 'voto' : 'voti'}) — partita del ${dateStr}`,
         sourceMatchId: matchId
       });
       created++;
