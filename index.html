@@ -198,6 +198,12 @@ input[type=checkbox] { accent-color: var(--accent); width: 18px; height: 18px; }
 .edit-panel button { padding: 9px 16px; font-size: 13.5px; }
 .edit-add { background: var(--surface-2); }
 .edit-panel .btn-ghost { background: var(--surface); }
+.poster-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+.poster-controls { display: flex; flex-direction: column; gap: 14px; }
+.poster-side label { display: block; margin-bottom: 6px; }
+.file-btn { display: inline-block; cursor: pointer; padding: 11px 20px; border-radius: 999px; font-weight: 700; font-size: 14px; margin: 0; color: var(--text); }
+.poster-preview canvas { width: 100%; height: auto; border-radius: 16px; box-shadow: var(--shadow); display: block; background: var(--surface-2); }
+@media (max-width: 760px) { .poster-grid { grid-template-columns: 1fr; } .poster-preview { order: -1; } }
 </style>
 </head>
 <body>
@@ -308,6 +314,50 @@ input[type=checkbox] { accent-color: var(--accent); width: 18px; height: 18px; }
     <h2><span class="step-num">5</span>Disposizione in campo</h2>
     <p class="hint">La formazione delle squadre generate qui sopra, in base ai ruoli assegnati.</p>
     <div id="pitch-container"></div>
+  </section>
+
+  <section class="card" id="poster-section">
+    <h2><span class="step-num">★</span>Locandina della partita</h2>
+    <p class="hint">Crea l'immagine della sfida con le foto di due amici, i nomi e i colori delle squadre. Poi scaricala o condividila direttamente nel gruppo. Le foto restano solo su questo dispositivo.</p>
+    <div class="poster-grid">
+      <div class="poster-controls">
+        <div class="poster-side">
+          <label for="poster-a">Faccia della squadra A</label>
+          <select id="poster-a" onchange="posterManual=true; posterRefresh()"></select>
+          <div class="row" style="margin-top:8px;">
+            <label class="btn-ghost file-btn">Carica foto<input type="file" accept="image/*" hidden onchange="posterUpload('A', this)"></label>
+            <button class="btn-ghost" onclick="posterRemovePhoto('A')">Rimuovi foto</button>
+          </div>
+        </div>
+        <div class="poster-side">
+          <label for="poster-b">Faccia della squadra B</label>
+          <select id="poster-b" onchange="posterManual=true; posterRefresh()"></select>
+          <div class="row" style="margin-top:8px;">
+            <label class="btn-ghost file-btn">Carica foto<input type="file" accept="image/*" hidden onchange="posterUpload('B', this)"></label>
+            <button class="btn-ghost" onclick="posterRemovePhoto('B')">Rimuovi foto</button>
+          </div>
+        </div>
+        <div class="poster-side">
+          <label for="poster-title">Titolo</label>
+          <input type="text" id="poster-title" value="Partita di oggi" oninput="posterRefresh()">
+        </div>
+        <div class="poster-side">
+          <label>Risultato (lascia vuoto per mostrare VS)</label>
+          <div class="row">
+            <input type="number" id="poster-score-a" min="0" placeholder="A" oninput="posterRefresh()">
+            <span>–</span>
+            <input type="number" id="poster-score-b" min="0" placeholder="B" oninput="posterRefresh()">
+          </div>
+        </div>
+        <label class="check-row" style="padding-left:0;"><input type="checkbox" id="poster-lineups" checked onchange="posterRefresh()"> Mostra le formazioni</label>
+        <div class="row wrap-row" style="margin-top:6px;">
+          <button class="btn-primary" onclick="posterShare()">Condividi</button>
+          <button class="btn-ghost" onclick="posterDownload()">Scarica immagine</button>
+        </div>
+        <p class="hint" id="poster-note" style="margin-top:10px; display:none;"></p>
+      </div>
+      <div class="poster-preview"><canvas id="poster-canvas" width="1080" height="1350" aria-label="Anteprima locandina"></canvas></div>
+    </div>
   </section>
 
   <section class="card" id="stats-section">
@@ -539,6 +589,7 @@ function renderAll() {
   applyTeamMetaToHeaders();
   updateSaveButtonState();
   subscribeOverallPerformance();
+  posterRefresh();
 }
 async function initSync() {
   let dbCap = null;
@@ -959,6 +1010,7 @@ function renderTeams() {
   document.getElementById('diff-line').textContent = `Differenza tra i totali: ${diff.toFixed(2)} punti`;
   renderEditPanel();
   renderPitch();
+  if (typeof posterRefresh === 'function') posterRefresh();
 }
 function teamCardHtml(p, team, index) {
   const isSelected = swapSelection && swapSelection.team === team && swapSelection.index === index;
@@ -1101,6 +1153,196 @@ function addToTeam() {
   (teamSel.value === 'B' ? currentTeams.teamB : currentTeams.teamA).push(makeTeamPlayer(pl));
   selectedIds.add(pl.id);
   afterTeamEdit();
+}
+
+// ---- Locandina della partita (immagine da condividere) ----
+const PHOTOS_KEY = 'squadre-photos-v1';
+let posterPhotos = (() => { try { return JSON.parse(localStorage.getItem(PHOTOS_KEY) || '{}'); } catch (e) { return {}; } })();
+const posterImgCache = {};
+let posterSig = '';
+let posterManual = false;
+function savePosterPhotos() {
+  try { localStorage.setItem(PHOTOS_KEY, JSON.stringify(posterPhotos)); return true; }
+  catch (e) { return false; }
+}
+function posterNote(msg) {
+  const el = document.getElementById('poster-note');
+  if (!el) return;
+  el.textContent = msg; el.style.display = 'block';
+  clearTimeout(posterNote.t); posterNote.t = setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
+function posterPopulate() {
+  const a = document.getElementById('poster-a'), b = document.getElementById('poster-b');
+  if (!a || !b) return;
+  const sig = roster.map(p => p.id + p.name).join('|') + '#' + (currentTeams ? currentTeams.teamA.map(p => p.id).join(',') + '/' + currentTeams.teamB.map(p => p.id).join(',') : '');
+  if (sig === posterSig) return;
+  posterSig = sig;
+  const opts = roster.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+  const prevA = a.value, prevB = b.value;
+  a.innerHTML = opts; b.innerHTML = opts;
+  const first = (arr, fallbackIdx) => (arr && arr[0]) ? arr[0].id : (roster[fallbackIdx] ? roster[fallbackIdx].id : '');
+  const defA = first(currentTeams && currentTeams.teamA, 0), defB = first(currentTeams && currentTeams.teamB, 1);
+  a.value = (posterManual && roster.some(p => p.id === prevA)) ? prevA : defA;
+  b.value = (posterManual && roster.some(p => p.id === prevB)) ? prevB : defB;
+}
+function posterLoadImg(id) {
+  return new Promise(resolve => {
+    const src = posterPhotos[id];
+    if (!src) return resolve(null);
+    if (posterImgCache[id] && posterImgCache[id].src === src) return resolve(posterImgCache[id].img);
+    const img = new Image();
+    img.onload = () => { posterImgCache[id] = { src, img }; resolve(img); };
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+function posterFit(ctx, text, maxW, size, weight) {
+  let sz = size;
+  const fam = '"Bricolage Grotesque","DM Sans",sans-serif';
+  do { ctx.font = `${weight} ${sz}px ${fam}`; sz -= 2; } while (ctx.measureText(text).width > maxW && sz > 18);
+}
+let posterBusy = false, posterAgain = false;
+async function posterRefresh() {
+  posterPopulate();
+  const canvas = document.getElementById('poster-canvas');
+  if (!canvas) return;
+  if (posterBusy) { posterAgain = true; return; }
+  posterBusy = true;
+  try {
+    try { await document.fonts.load('800 40px "Bricolage Grotesque"'); await document.fonts.load('600 30px "DM Sans"'); } catch (e) {}
+    await posterDraw(canvas);
+  } catch (e) { console.error('Errore nella locandina:', e); }
+  posterBusy = false;
+  if (posterAgain) { posterAgain = false; posterRefresh(); }
+}
+async function posterDraw(canvas) {
+  const W = 1080, H = 1350, ctx = canvas.getContext('2d');
+  const colA = teamMeta.colors.A, colB = teamMeta.colors.B;
+  const nameA = teamMeta.names.A, nameB = teamMeta.names.B;
+  const pa = roster.find(p => p.id === document.getElementById('poster-a').value);
+  const pb = roster.find(p => p.id === document.getElementById('poster-b').value);
+  const imgA = pa ? await posterLoadImg(pa.id) : null;
+  const imgB = pb ? await posterLoadImg(pb.id) : null;
+  const fam = '"Bricolage Grotesque","DM Sans",sans-serif';
+  // sfondo diviso in diagonale
+  ctx.fillStyle = colB; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = colA;
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(W * 0.6, 0); ctx.lineTo(W * 0.4, H); ctx.lineTo(0, H); ctx.closePath(); ctx.fill();
+  const shade = ctx.createLinearGradient(0, 0, 0, H);
+  shade.addColorStop(0, 'rgba(0,0,0,0.25)'); shade.addColorStop(0.45, 'rgba(0,0,0,0.05)'); shade.addColorStop(1, 'rgba(0,0,0,0.7)');
+  ctx.fillStyle = shade; ctx.fillRect(0, 0, W, H);
+  // cerchio di centrocampo
+  ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 6;
+  ctx.beginPath(); ctx.arc(W / 2, 600, 330, 0, Math.PI * 2); ctx.stroke();
+  // titolo e data
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = '#fff';
+  const title = (document.getElementById('poster-title').value || '').trim();
+  if (title) { posterFit(ctx, title.toUpperCase(), W - 140, 78, 800); ctx.fillText(title.toUpperCase(), W / 2, 118); }
+  const dateStr = new Date(selectedMatchDate()).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
+  ctx.font = `600 34px "DM Sans",sans-serif`; ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fillText(dateStr, W / 2, 168);
+  // foto
+  const R = 190, cy = 520;
+  const drawFace = (img, p, cx, color) => {
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, R + 14, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.clip();
+    if (img) {
+      const sc = Math.max(2 * R / img.width, 2 * R / img.height);
+      ctx.drawImage(img, cx - img.width * sc / 2, cy - img.height * sc / 2, img.width * sc, img.height * sc);
+    } else {
+      ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(cx - R, cy - R, 2 * R, 2 * R);
+      ctx.fillStyle = '#fff'; ctx.font = `800 170px ${fam}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const ini = p ? p.name.trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?';
+      ctx.fillText(ini, cx, cy + 8);
+    }
+    ctx.restore();
+  };
+  drawFace(imgA, pa, 240, colA);
+  drawFace(imgB, pb, W - 240, colB);
+  // nome del giocatore e della squadra
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = '#fff';
+  [[pa, 240, nameA], [pb, W - 240, nameB]].forEach(([p, cx, tn]) => {
+    posterFit(ctx, tn, 420, 64, 800); ctx.fillText(tn, cx, cy + R + 100);
+    if (p) { ctx.font = `600 36px "DM Sans",sans-serif`; ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.fillText(p.name, cx, cy + R + 148); ctx.fillStyle = '#fff'; }
+  });
+  // VS oppure risultato
+  const sa = document.getElementById('poster-score-a').value, sb = document.getElementById('poster-score-b').value;
+  const hasScore = sa !== '' && sb !== '';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round'; ctx.lineWidth = 14; ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+  const mid = hasScore ? `${sa} - ${sb}` : 'VS';
+  posterFit(ctx, mid, 190, hasScore ? 96 : 130, 800);
+  ctx.strokeText(mid, W / 2, cy); ctx.fillStyle = '#ffd24a'; ctx.fillText(mid, W / 2, cy);
+  // formazioni
+  ctx.textBaseline = 'alphabetic';
+  const showLineups = document.getElementById('poster-lineups').checked && currentTeams;
+  if (showLineups) {
+    const colX = [240, W - 240];
+    [currentTeams.teamA, currentTeams.teamB].forEach((team, i) => {
+      const names = team.map(p => p.name).slice(0, 9);
+      const n = names.length;
+      const lh = n > 7 ? 40 : 46;
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+      names.forEach((nm, k) => { posterFit(ctx, nm, 420, n > 7 ? 32 : 36, 600); ctx.fillText(nm, colX[i], 1010 + k * lh); });
+    });
+  }
+  // firma
+  ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = `600 26px "DM Sans",sans-serif`;
+  ctx.fillText('Squadre equilibrate', W / 2, H - 36);
+}
+function posterUpload(side, input) {
+  const id = document.getElementById(side === 'A' ? 'poster-a' : 'poster-b').value;
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!id || !file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const S = 560, c = document.createElement('canvas');
+      c.width = S; c.height = S;
+      const sc = Math.max(S / img.width, S / img.height);
+      c.getContext('2d').drawImage(img, (S - img.width * sc) / 2, (S - img.height * sc) / 2, img.width * sc, img.height * sc);
+      posterPhotos[id] = c.toDataURL('image/jpeg', 0.85);
+      if (!savePosterPhotos()) posterNote('Foto usata ma non salvata: spazio del browser pieno.');
+      posterRefresh();
+    };
+    img.onerror = () => posterNote('Non riesco a leggere questa immagine. Prova con un altro file.');
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+function posterRemovePhoto(side) {
+  const id = document.getElementById(side === 'A' ? 'poster-a' : 'poster-b').value;
+  if (!id || !posterPhotos[id]) return;
+  delete posterPhotos[id]; delete posterImgCache[id];
+  savePosterPhotos(); posterRefresh();
+}
+async function posterBlob() {
+  await posterRefresh();
+  const canvas = document.getElementById('poster-canvas');
+  return new Promise(res => canvas.toBlob(res, 'image/png'));
+}
+async function posterDownload() {
+  const blob = await posterBlob();
+  if (!blob) { posterNote('Non sono riuscito a creare l\'immagine.'); return; }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'locandina-partita.png';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+async function posterShare() {
+  const blob = await posterBlob();
+  if (!blob) { posterNote('Non sono riuscito a creare l\'immagine.'); return; }
+  const file = new File([blob], 'locandina-partita.png', { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: 'Locandina partita' }); return; }
+    catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  await posterDownload();
+  posterNote('Condivisione diretta non disponibile qui: ho scaricato l\'immagine, mandala dal gruppo.');
 }
 
 function escapeHtml(str) {
@@ -2117,7 +2359,7 @@ document.addEventListener('click', e => {
 // ---- Barra di navigazione: mostra solo le sezioni visibili ----
 const NAV_ITEMS = [
   ['roster-section','Rosa'],['weights-section','Pesi'],['match-section','Partita'],['result-section','Squadre'],
-  ['pitch-section','Campo'],['stats-section','Marcatori'],['rankings-section','Classifiche'],
+  ['pitch-section','Campo'],['poster-section','Locandina'],['stats-section','Marcatori'],['rankings-section','Classifiche'],
   ['performance-section','Media voti'],['suggestions-section','Suggerimenti'],['history-section','Storico'],['vote-section','Vota']
 ];
 let navTimer = null, navObserver = null;
