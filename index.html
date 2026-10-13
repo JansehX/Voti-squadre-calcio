@@ -204,6 +204,11 @@ input[type=checkbox] { accent-color: var(--accent); width: 18px; height: 18px; }
 .file-btn { display: inline-block; cursor: pointer; padding: 11px 20px; border-radius: 999px; font-weight: 700; font-size: 14px; margin: 0; color: var(--text); }
 .poster-preview canvas { width: 100%; height: auto; border-radius: 16px; box-shadow: var(--shadow); display: block; background: var(--surface-2); }
 @media (max-width: 760px) { .poster-grid { grid-template-columns: 1fr; } .poster-preview { order: -1; } }
+.match-poster { display: block; width: 100%; max-width: 340px; height: auto; border-radius: 14px; box-shadow: var(--shadow); cursor: zoom-in; margin: 4px auto 14px; }
+.poster-thumb { width: 30px; height: 38px; object-fit: cover; border-radius: 6px; box-shadow: 0 0 0 2px var(--surface); }
+.lightbox { position: fixed; inset: 0; z-index: 200; background: rgba(5,8,18,.88); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 20px; }
+.lightbox img { max-width: min(92vw, 560px); max-height: 78vh; border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+.lightbox .row { gap: 10px; }
 </style>
 </head>
 <body>
@@ -350,8 +355,14 @@ input[type=checkbox] { accent-color: var(--accent); width: 18px; height: 18px; }
           </div>
         </div>
         <label class="check-row" style="padding-left:0;"><input type="checkbox" id="poster-lineups" checked onchange="posterRefresh()"> Mostra le formazioni</label>
+        <div class="poster-side">
+          <label for="poster-match">Partita a cui collegarla</label>
+          <select id="poster-match"></select>
+          <button class="btn-primary" id="poster-save-btn" style="margin-top:8px;" onclick="posterSaveToHistory()">Salva nello storico</button>
+          <p class="hint" id="poster-match-hint" style="margin:8px 0 0; display:none;">Salva prima la partita (sezione 4): poi potrai collegarci la locandina.</p>
+        </div>
         <div class="row wrap-row" style="margin-top:6px;">
-          <button class="btn-primary" onclick="posterShare()">Condividi</button>
+          <button class="btn-ghost" onclick="posterShare()">Condividi</button>
           <button class="btn-ghost" onclick="posterDownload()">Scarica immagine</button>
         </div>
         <p class="hint" id="poster-note" style="margin-top:10px; display:none;"></p>
@@ -407,7 +418,9 @@ input[type=checkbox] { accent-color: var(--accent); width: 18px; height: 18px; }
     <p class="hint">In base a gol, assist e voti dei compagni, ecco le modifiche proposte ai voti tecnici. Puoi accettarle così come sono, cambiare il valore prima di applicarle, oppure ignorarle.</p>
     <div class="row" style="margin-bottom:10px;">
       <button class="btn-ghost" onclick="generateSuggestionsFromOverallVotes()">Genera suggerimenti dalla media generale dei voti</button>
+      <button class="btn-ghost" onclick="generateStreakSuggestions()">Controlla le strisce negative</button>
     </div>
+    <p class="hint">Striscia negativa: se un giocatore riceve per almeno 3 partite di fila una media voto sotto quella del gruppo (di almeno mezzo punto), ti propongo un calo di forma: −2% su ogni voto per ogni partita della striscia, fino a −10%. Ogni partita viene contata una volta sola.</p>
     <p class="hint" id="overall-suggest-note" style="display:none;"></p>
     <div id="suggestions-list"></div>
   </section>
@@ -553,6 +566,8 @@ function loadTeamMeta() {
   return { names: { A: 'Squadra A', B: 'Squadra B' }, colors: { A: '#1f6f4a', B: '#b8842e' } };
 }
 let teamMeta = loadTeamMeta();
+const SUGGESTION_LOG_KEY = 'squadre-suggestionlog-v1';
+let suggestionLog = (() => { try { return JSON.parse(localStorage.getItem(SUGGESTION_LOG_KEY) || '[]'); } catch (e) { return []; } })();
 let currentTeams = null;
 let lastSavedTeamsRef = null;
 let swapSelection = null;
@@ -567,11 +582,12 @@ function schedulePersist() {
     localStorage.setItem(MATCHES_KEY, JSON.stringify(matches));
     localStorage.setItem(SUGGESTIONS_KEY, JSON.stringify(suggestions));
     localStorage.setItem(TEAM_META_KEY, JSON.stringify(teamMeta));
+    localStorage.setItem(SUGGESTION_LOG_KEY, JSON.stringify(suggestionLog));
   } catch (e) {}
   if (!db) return;
   if (dbSaveInFlight) { dbSaveDirty = true; return; }
   dbSaveInFlight = db.doc('app/state').set({
-    roster, weights, matches, suggestions, teamMeta, updatedAt: new Date().toISOString()
+    roster, weights, matches, suggestions, teamMeta, suggestionLog, updatedAt: new Date().toISOString()
   }).catch(() => {}).finally(() => {
     dbSaveInFlight = null;
     if (dbSaveDirty) { dbSaveDirty = false; schedulePersist(); }
@@ -609,6 +625,7 @@ async function initSync() {
       if (Array.isArray(data.matches)) matches = JSON.parse(JSON.stringify(data.matches));
       if (Array.isArray(data.suggestions)) suggestions = JSON.parse(JSON.stringify(data.suggestions));
       if (data.teamMeta) teamMeta = JSON.parse(JSON.stringify(data.teamMeta));
+      if (Array.isArray(data.suggestionLog)) suggestionLog = JSON.parse(JSON.stringify(data.suggestionLog));
       renderAll();
     } else {
       schedulePersist();
@@ -616,6 +633,7 @@ async function initSync() {
   } catch (e) {
     console.error('Errore nella prima lettura dei dati sincronizzati:', e);
   }
+  loadPostersFromDb();
 }
 
 const ROLES = [
@@ -1215,6 +1233,13 @@ async function posterRefresh() {
   posterBusy = false;
   if (posterAgain) { posterAgain = false; posterRefresh(); }
 }
+function posterPath(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath();
+}
 async function posterDraw(canvas) {
   const W = 1080, H = 1350, ctx = canvas.getContext('2d');
   const colA = teamMeta.colors.A, colB = teamMeta.colors.B;
@@ -1224,72 +1249,148 @@ async function posterDraw(canvas) {
   const imgA = pa ? await posterLoadImg(pa.id) : null;
   const imgB = pb ? await posterLoadImg(pb.id) : null;
   const fam = '"Bricolage Grotesque","DM Sans",sans-serif';
-  // sfondo diviso in diagonale
-  ctx.fillStyle = colB; ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = colA;
-  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(W * 0.6, 0); ctx.lineTo(W * 0.4, H); ctx.lineTo(0, H); ctx.closePath(); ctx.fill();
-  const shade = ctx.createLinearGradient(0, 0, 0, H);
-  shade.addColorStop(0, 'rgba(0,0,0,0.25)'); shade.addColorStop(0.45, 'rgba(0,0,0,0.05)'); shade.addColorStop(1, 'rgba(0,0,0,0.7)');
-  ctx.fillStyle = shade; ctx.fillRect(0, 0, W, H);
-  // cerchio di centrocampo
-  ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 6;
-  ctx.beginPath(); ctx.arc(W / 2, 600, 330, 0, Math.PI * 2); ctx.stroke();
-  // titolo e data
-  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = '#fff';
+  const YEL = '#ffd23f';
+  ctx.clearRect(0, 0, W, H);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+
+  // --- sfondo: base scura + due metà colorate in diagonale
+  ctx.fillStyle = '#080d1c'; ctx.fillRect(0, 0, W, H);
+  const half = (poly, col, gx) => {
+    ctx.save(); ctx.beginPath(); poly.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); ctx.clip();
+    const g = ctx.createLinearGradient(gx, 0, W / 2, H);
+    g.addColorStop(0, col); g.addColorStop(1, '#080d1c');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+  };
+  half([[0, 0], [W * 0.62, 0], [W * 0.38, H], [0, H]], colA, 0);
+  half([[W * 0.62, 0], [W, 0], [W, H], [W * 0.38, H]], colB, W);
+  // strisce diagonali
+  ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 26;
+  for (let x = -H; x < W + H; x += 78) { ctx.beginPath(); ctx.moveTo(x, H); ctx.lineTo(x + H * 0.55, 0); ctx.stroke(); }
+  ctx.restore();
+  // riflettori dietro le foto
+  const spot = (cx, col) => {
+    const g = ctx.createRadialGradient(cx, 640, 40, cx, 640, 420);
+    g.addColorStop(0, col + 'cc'); g.addColorStop(1, col + '00');
+    ctx.fillStyle = g; ctx.fillRect(0, 200, W, 900);
+  };
+  spot(250, colA); spot(W - 250, colB);
+  // taglio centrale luminoso
+  ctx.save();
+  ctx.shadowColor = YEL; ctx.shadowBlur = 40; ctx.strokeStyle = YEL; ctx.lineWidth = 10; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(W * 0.62, 0); ctx.lineTo(W * 0.38, H); ctx.stroke();
+  ctx.restore();
+
+  // --- #MATCHDAY
+  ctx.save();
+  ctx.lineJoin = 'round';
+  posterFit(ctx, '#MATCHDAY', W - 90, 168, 800);
+  ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 24; ctx.shadowOffsetY = 10;
+  ctx.lineWidth = 16; ctx.strokeStyle = '#080d1c'; ctx.strokeText('#MATCHDAY', W / 2, 190);
+  ctx.shadowColor = 'transparent';
+  const hg = ctx.createLinearGradient(0, 70, 0, 200);
+  hg.addColorStop(0, '#ffffff'); hg.addColorStop(1, YEL);
+  ctx.fillStyle = hg; ctx.fillText('#MATCHDAY', W / 2, 190);
+  ctx.restore();
+
+  // titolo in etichetta gialla e data
+  let y = 222;
   const title = (document.getElementById('poster-title').value || '').trim();
-  if (title) { posterFit(ctx, title.toUpperCase(), W - 140, 78, 800); ctx.fillText(title.toUpperCase(), W / 2, 118); }
+  if (title) {
+    ctx.save();
+    posterFit(ctx, title.toUpperCase(), W - 280, 40, 800);
+    const tw = ctx.measureText(title.toUpperCase()).width + 70;
+    ctx.fillStyle = YEL; ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 14; ctx.shadowOffsetY = 5;
+    posterPath(ctx, W / 2 - tw / 2, y, tw, 66, 33); ctx.fill();
+    ctx.shadowColor = 'transparent'; ctx.fillStyle = '#10142a';
+    ctx.fillText(title.toUpperCase(), W / 2, y + 46);
+    ctx.restore();
+    y += 66;
+  }
   const dateStr = new Date(selectedMatchDate()).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
-  ctx.font = `600 34px "DM Sans",sans-serif`; ctx.fillStyle = 'rgba(255,255,255,0.85)';
-  ctx.fillText(dateStr, W / 2, 168);
-  // foto
-  const R = 190, cy = 520;
+  ctx.font = '700 36px "DM Sans",sans-serif'; ctx.fillStyle = '#fff';
+  ctx.fillText(dateStr.toUpperCase(), W / 2, y + 52);
+
+  // --- foto con doppio anello e bagliore
+  const R = 200, cy = 650, cxA = 250, cxB = W - 250;
   const drawFace = (img, p, cx, color) => {
     ctx.save();
-    ctx.beginPath(); ctx.arc(cx, cy, R + 14, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.shadowColor = color; ctx.shadowBlur = 60;
+    ctx.beginPath(); ctx.arc(cx, cy, R + 26, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.beginPath(); ctx.arc(cx, cy, R + 12, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.restore();
+    ctx.save();
     ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.clip();
     if (img) {
       const sc = Math.max(2 * R / img.width, 2 * R / img.height);
       ctx.drawImage(img, cx - img.width * sc / 2, cy - img.height * sc / 2, img.width * sc, img.height * sc);
     } else {
-      ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(cx - R, cy - R, 2 * R, 2 * R);
-      ctx.fillStyle = '#fff'; ctx.font = `800 170px ${fam}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const g = ctx.createLinearGradient(cx - R, cy - R, cx + R, cy + R);
+      g.addColorStop(0, '#26304f'); g.addColorStop(1, '#0d1330');
+      ctx.fillStyle = g; ctx.fillRect(cx - R, cy - R, 2 * R, 2 * R);
+      ctx.fillStyle = '#fff'; ctx.font = `800 150px ${fam}`; ctx.textBaseline = 'middle';
       const ini = p ? p.name.trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?';
       ctx.fillText(ini, cx, cy + 8);
     }
     ctx.restore();
+    ctx.textBaseline = 'alphabetic';
   };
-  drawFace(imgA, pa, 240, colA);
-  drawFace(imgB, pb, W - 240, colB);
-  // nome del giocatore e della squadra
-  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = '#fff';
-  [[pa, 240, nameA], [pb, W - 240, nameB]].forEach(([p, cx, tn]) => {
-    posterFit(ctx, tn, 420, 64, 800); ctx.fillText(tn, cx, cy + R + 100);
-    if (p) { ctx.font = `600 36px "DM Sans",sans-serif`; ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.fillText(p.name, cx, cy + R + 148); ctx.fillStyle = '#fff'; }
-  });
-  // VS oppure risultato
+  drawFace(imgA, pa, cxA, colA);
+  drawFace(imgB, pb, cxB, colB);
+
+  // --- VS / risultato in un badge
   const sa = document.getElementById('poster-score-a').value, sb = document.getElementById('poster-score-b').value;
   const hasScore = sa !== '' && sb !== '';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.lineJoin = 'round'; ctx.lineWidth = 14; ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 30; ctx.shadowOffsetY = 10;
+  ctx.fillStyle = YEL;
+  if (hasScore) { posterPath(ctx, W / 2 - 128, cy - 76, 256, 152, 76); ctx.fill(); }
+  else { ctx.beginPath(); ctx.arc(W / 2, cy, 90, 0, Math.PI * 2); ctx.fill(); }
+  ctx.shadowColor = 'transparent'; ctx.lineWidth = 8; ctx.strokeStyle = '#fff'; ctx.stroke();
+  ctx.fillStyle = '#10142a'; ctx.textBaseline = 'middle';
   const mid = hasScore ? `${sa} - ${sb}` : 'VS';
-  posterFit(ctx, mid, 190, hasScore ? 96 : 130, 800);
-  ctx.strokeText(mid, W / 2, cy); ctx.fillStyle = '#ffd24a'; ctx.fillText(mid, W / 2, cy);
-  // formazioni
+  posterFit(ctx, mid, hasScore ? 210 : 120, hasScore ? 92 : 84, 800);
+  ctx.fillText(mid, W / 2, cy + 6);
+  ctx.restore();
   ctx.textBaseline = 'alphabetic';
-  const showLineups = document.getElementById('poster-lineups').checked && currentTeams;
-  if (showLineups) {
-    const colX = [240, W - 240];
-    [currentTeams.teamA, currentTeams.teamB].forEach((team, i) => {
+
+  // --- nastri con i nomi delle squadre
+  const ribbon = (cx, col, name, player) => {
+    const rw = 440, rh = 84, ry = cy + R + 56, sk = 26;
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 20; ctx.shadowOffsetY = 8;
+    ctx.beginPath(); ctx.moveTo(cx - rw / 2 + sk, ry); ctx.lineTo(cx + rw / 2, ry); ctx.lineTo(cx + rw / 2 - sk, ry + rh); ctx.lineTo(cx - rw / 2, ry + rh); ctx.closePath();
+    ctx.fillStyle = col; ctx.fill();
+    ctx.shadowColor = 'transparent'; ctx.lineWidth = 6; ctx.strokeStyle = '#fff'; ctx.stroke();
+    ctx.fillStyle = '#fff'; posterFit(ctx, name.toUpperCase(), rw - 110, 54, 800);
+    ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = 8;
+    ctx.fillText(name.toUpperCase(), cx, ry + rh - 24);
+    ctx.restore();
+    if (player) { ctx.font = '700 32px "DM Sans",sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.fillText(player.name, cx, ry + rh + 46); }
+  };
+  ribbon(cxA, colA, nameA, pa);
+  ribbon(cxB, colB, nameB, pb);
+
+  // --- formazioni in pannelli
+  if (document.getElementById('poster-lineups').checked && currentTeams) {
+    const top = 1062, avail = 214;
+    [[currentTeams.teamA, cxA, colA], [currentTeams.teamB, cxB, colB]].forEach(([team, cx, col]) => {
       const names = team.map(p => p.name).slice(0, 9);
-      const n = names.length;
-      const lh = n > 7 ? 40 : 46;
-      ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
-      names.forEach((nm, k) => { posterFit(ctx, nm, 420, n > 7 ? 32 : 36, 600); ctx.fillText(nm, colX[i], 1010 + k * lh); });
+      const n = names.length || 1;
+      const lh = Math.min(44, Math.floor((avail - 24) / n));
+      const ph = n * lh + 28;
+      ctx.save();
+      ctx.fillStyle = 'rgba(8,13,28,0.62)'; posterPath(ctx, cx - 210, top, 420, ph, 24); ctx.fill();
+      ctx.fillStyle = col; posterPath(ctx, cx - 210, top, 10, ph, 5); ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = '#fff';
+      names.forEach((nm, k) => { posterFit(ctx, nm, 340, Math.round(lh * 0.74), 700); ctx.fillText(nm, cx + 6, top + 14 + lh * (k + 0.74)); });
     });
   }
   // firma
-  ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = `600 26px "DM Sans",sans-serif`;
-  ctx.fillText('Squadre equilibrate', W / 2, H - 36);
+  ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = '600 24px "DM Sans",sans-serif';
+  ctx.fillText('SQUADRE EQUILIBRATE', W / 2, H - 24);
 }
 function posterUpload(side, input) {
   const id = document.getElementById(side === 'A' ? 'poster-a' : 'poster-b').value;
@@ -1343,6 +1444,97 @@ async function posterShare() {
   }
   await posterDownload();
   posterNote('Condivisione diretta non disponibile qui: ho scaricato l\'immagine, mandala dal gruppo.');
+}
+
+// ---- Locandine collegate alle partite dello storico ----
+const POSTERS_KEY = 'squadre-posters-v1';
+let posters = (() => { try { return JSON.parse(localStorage.getItem(POSTERS_KEY) || '{}'); } catch (e) { return {}; } })();
+let historyOpenId = null;
+function savePostersLocal() {
+  try { localStorage.setItem(POSTERS_KEY, JSON.stringify(posters)); return true; } catch (e) { return false; }
+}
+async function loadPostersFromDb() {
+  if (!db) return;
+  try {
+    const snap = await db.collection('posters').get();
+    let changed = false;
+    snap.docs.forEach(d => {
+      const data = d.data();
+      const id = (data && data.matchId) || d.id;
+      if (data && data.image && posters[id] !== data.image) { posters[id] = data.image; changed = true; }
+    });
+    if (changed) { savePostersLocal(); renderHistory(); }
+  } catch (e) { console.error('Errore leggendo le locandine:', e); }
+}
+function posterMatchLabel(m) {
+  const d = new Date(m.date).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' });
+  const a = m.teamNames ? m.teamNames.A : 'Squadra A', b = m.teamNames ? m.teamNames.B : 'Squadra B';
+  return `${d} · ${a} vs ${b}${posters[m.id] ? ' (ha già una locandina)' : ''}`;
+}
+function posterPopulateMatches() {
+  const sel = document.getElementById('poster-match');
+  const btn = document.getElementById('poster-save-btn');
+  const hint = document.getElementById('poster-match-hint');
+  if (!sel || !btn) return;
+  const prev = sel.value;
+  const sorted = matches.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+  sel.innerHTML = sorted.map(m => `<option value="${m.id}">${escapeHtml(posterMatchLabel(m))}</option>`).join('');
+  if (sorted.some(m => m.id === prev)) sel.value = prev;
+  const none = sorted.length === 0;
+  btn.disabled = none;
+  sel.style.display = none ? 'none' : '';
+  if (hint) hint.style.display = none ? 'block' : 'none';
+}
+async function posterStoredDataUrl() {
+  await posterRefresh();
+  const src = document.getElementById('poster-canvas');
+  const c = document.createElement('canvas');
+  c.width = 810; c.height = 1012;
+  c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', 0.82);
+}
+async function posterSaveToHistory() {
+  const sel = document.getElementById('poster-match');
+  const id = sel && sel.value;
+  if (!id || !matches.some(m => m.id === id)) return;
+  const image = await posterStoredDataUrl();
+  posters[id] = image;
+  const okLocal = savePostersLocal();
+  let okDb = !db;
+  if (db) {
+    try { await db.collection('posters').doc(id).set({ matchId: id, image, updatedAt: new Date().toISOString() }); okDb = true; }
+    catch (e) { console.error('Errore salvando la locandina online:', e); }
+  }
+  historyOpenId = id;
+  renderHistory();
+  posterPopulateMatches();
+  if (!okDb) posterNote('Locandina salvata solo su questo dispositivo: online non è passata (controlla le regole di Firestore).');
+  else if (!okLocal && !db) posterNote('Spazio del browser pieno: la locandina non è stata salvata.');
+  else posterNote('Locandina salvata nello storico: la trovi nella partita.');
+  const card = document.querySelector(`#history-list details[data-id="${id}"]`);
+  if (card) card.scrollIntoView({ block: 'center' });
+}
+async function posterRemoveFromHistory(id) {
+  if (isVoteOnlyMode) return;
+  delete posters[id];
+  savePostersLocal();
+  if (db) { try { await db.collection('posters').doc(id).delete(); } catch (e) { console.error(e); } }
+  renderHistory();
+  posterPopulateMatches();
+}
+function posterOpen(id) {
+  const img = posters[id];
+  if (!img) return;
+  const box = document.createElement('div');
+  box.className = 'lightbox';
+  box.innerHTML = `<img alt="Locandina della partita" src="${img}">
+    <div class="row"><a class="btn-primary" style="text-decoration:none; padding:11px 22px; border-radius:999px; font-weight:700; font-size:14px;" href="${img}" download="locandina-partita.jpg">Scarica</a>
+    <button class="btn-ghost" type="button">Chiudi</button></div>`;
+  const close = () => { box.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  box.addEventListener('click', e => { if (e.target === box || e.target.tagName === 'BUTTON') close(); });
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(box);
 }
 
 function escapeHtml(str) {
@@ -1670,6 +1862,20 @@ function renderSuggestions() {
   container.innerHTML = suggestions.map(s => {
     const p = roster.find(pl => pl.id === s.playerId);
     const name = p ? p.name : '—';
+    if (s.subId === 'ALL' && s.mode === 'percent') {
+      return `
+        <div class="check-row" style="justify-content:space-between; flex-wrap:wrap; gap:8px;">
+          <span style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+            <strong>${escapeHtml(name)}</strong> — ${s.label}:
+            <input type="number" step="1" value="${s.percent}" id="sugg-input-${s.id}" style="width:64px;"> % su ogni voto
+            <span style="font-size:11px; color:var(--text-muted);">(${escapeHtml(s.reason)})</span>
+          </span>
+          <span class="row" style="gap:6px;">
+            <button class="btn-primary" style="padding:6px 10px; font-size:12px;" onclick="applySuggestion('${s.id}')">Applica</button>
+            <button class="btn-danger-ghost" onclick="dismissSuggestion('${s.id}')">Ignora</button>
+          </span>
+        </div>`;
+    }
     if (s.subId === 'ALL') {
       const sign = s.adjustment >= 0 ? '+' : '';
       return `
@@ -1705,7 +1911,14 @@ function applySuggestion(id) {
   const input = document.getElementById('sugg-input-' + id);
   const p = roster.find(pl => pl.id === s.playerId);
   if (p) {
-    if (s.subId === 'ALL') {
+    if (s.subId === 'ALL' && s.mode === 'percent') {
+      let pct = parseFloat(input ? input.value : s.percent);
+      if (isNaN(pct)) pct = s.percent;
+      allSubIds().forEach(catId => {
+        const cur = (typeof p.votes[catId] === 'number') ? p.votes[catId] : 5;
+        p.votes[catId] = Math.max(0, Math.min(10, +(cur * (1 + pct / 100)).toFixed(2)));
+      });
+    } else if (s.subId === 'ALL') {
       let adj = parseFloat(input ? input.value : s.adjustment);
       if (isNaN(adj)) adj = s.adjustment;
       allSubIds().forEach(catId => {
@@ -1735,6 +1948,7 @@ let editingMatchId = null;
 function renderHistory() {
   const container = document.getElementById('history-list');
   if (!container) return;
+  if (typeof posterPopulateMatches === 'function') posterPopulateMatches();
   if (matches.length === 0) {
     container.innerHTML = '<p class="empty-note">Nessuna partita salvata ancora.</p>';
     return;
@@ -1805,9 +2019,9 @@ function renderHistory() {
       </div>`;
     }).join('') : '<p class="empty-note" style="padding:2px 0;">Nessun giocatore registrato.</p>';
     return `
-      <details class="player" data-id="${m.id}">
+      <details class="player" data-id="${m.id}" ${historyOpenId === m.id ? 'open' : ''}>
         <summary>
-          <span class="player-name">${dateStr}</span>
+          <span class="player-name">${dateStr}${posters[m.id] ? ` <img class="poster-thumb" src="${posters[m.id]}" alt="" style="vertical-align:middle; margin-left:8px;">` : ''}</span>
           <span class="row" style="gap:10px;">
             <span style="font-size:12px; color:var(--text-muted);">${escapeHtml(namesA)} <strong style="color:var(--text);">${golA}-${golB}</strong> ${escapeHtml(namesB)}</span>
             ${isVoteOnlyMode ? '' : `
@@ -1816,6 +2030,10 @@ function renderHistory() {
           </span>
         </summary>
         <div class="player-body">
+          ${posters[m.id] ? `<div style="text-align:center; margin-top:12px;">
+            <img class="match-poster" src="${posters[m.id]}" alt="Locandina della partita" onclick="posterOpen('${m.id}')">
+            ${isVoteOnlyMode ? '' : `<button class="btn-danger-ghost" onclick="posterRemoveFromHistory('${m.id}')">Rimuovi locandina</button>`}
+          </div>` : ''}
           <div class="macro-block">
             <div class="macro-title" style="color:${colorA};">${escapeHtml(namesA)}</div>
             ${rowsHtml(teamA, colorA)}
@@ -1866,6 +2084,7 @@ function saveMatchEdit(id) {
 function deleteMatch(id) {
   if (isVoteOnlyMode) return;
   matches = matches.filter(m => m.id !== id);
+  if (posters[id]) { delete posters[id]; savePostersLocal(); if (db) { try { db.collection('posters').doc(id).delete(); } catch (e) {} } }
   saveMatches();
   renderHistory();
   renderRankings();
@@ -2199,6 +2418,72 @@ function subscribeOverallPerformance() {
     container.innerHTML = '<p class="empty-note">Impossibile leggere i voti in questo momento.</p>';
   }
 }
+// ---- Striscia negativa: calo di forma in percentuale ----
+const STREAK_MIN = 3;          // partite di fila necessarie
+const STREAK_MARGIN = 0.5;     // quanto sotto la media del gruppo conta come partita negativa
+const STREAK_PCT_PER_MATCH = 2; // % di calo per ogni partita della striscia
+const STREAK_PCT_MAX = 10;
+const STREAK_MIN_VOTES = 2;     // voti minimi ricevuti in una partita perché conti
+async function generateStreakSuggestions() {
+  const note = document.getElementById('overall-suggest-note');
+  let voteDocs = [];
+  if (db) {
+    try { const snap = await db.collection('perf-votes').get(); voteDocs = snap.docs.map(d => d.data()); }
+    catch (e) { console.error('Errore leggendo i voti per le strisce:', e); }
+  }
+  if (voteDocs.length === 0) voteDocs = Object.values(loadLocalVotes());
+  // media del gruppo e media di ogni giocatore in ogni partita
+  let sumAll = 0, cntAll = 0;
+  const perMatch = {};
+  voteDocs.forEach(d => {
+    Object.keys(d.ratings || {}).forEach(pid => {
+      const v = d.ratings[pid];
+      if (typeof v !== 'number') return;
+      sumAll += v; cntAll++;
+      const k = d.matchId + '|' + pid;
+      if (!perMatch[k]) perMatch[k] = { sum: 0, count: 0 };
+      perMatch[k].sum += v; perMatch[k].count++;
+    });
+  });
+  const groupMean = cntAll ? sumAll / cntAll : 6;
+  const sortedMatches = matches.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+  let created = 0;
+  roster.forEach(p => {
+    if (suggestions.some(x => x.playerId === p.id && x.sourceMatchId === 'streak')) return;
+    const consumed = new Set(suggestionLog.filter(l => l.playerId === p.id).flatMap(l => l.matchIds));
+    const rated = sortedMatches
+      .filter(m => [...(m.teamA || []), ...(m.teamB || [])].some(x => x.id === p.id))
+      .map(m => ({ m, st: perMatch[m.id + '|' + p.id] }))
+      .filter(x => x.st && x.st.count >= STREAK_MIN_VOTES);
+    const streak = [];
+    for (const x of rated) {
+      if (consumed.has(x.m.id)) break;
+      const avg = x.st.sum / x.st.count;
+      if (avg < groupMean - STREAK_MARGIN) streak.push({ id: x.m.id, avg }); else break;
+    }
+    if (streak.length < STREAK_MIN) return;
+    const pct = Math.min(STREAK_PCT_MAX, STREAK_PCT_PER_MATCH * streak.length);
+    suggestions.push({
+      id: 'sgs' + Date.now() + Math.random().toString(16).slice(2),
+      playerId: p.id, subId: 'ALL', mode: 'percent', percent: -pct, label: 'Calo di forma',
+      reason: `${streak.length} partite di fila sotto la media del gruppo (${groupMean.toFixed(2)}): ${streak.map(s => s.avg.toFixed(2)).join(', ')}`,
+      sourceMatchId: 'streak'
+    });
+    suggestionLog.push({ playerId: p.id, matchIds: streak.map(s => s.id), at: new Date().toISOString() });
+    created++;
+  });
+  saveSuggestions();
+  renderSuggestions();
+  if (note) {
+    note.style.display = 'block';
+    note.style.color = 'var(--accent)';
+    note.textContent = created > 0
+      ? `${created} calo/i di forma proposto/i qui sotto.`
+      : 'Nessuna striscia negativa: nessuno ha 3 partite di fila sotto la media del gruppo (con almeno 2 voti per partita).';
+    setTimeout(() => { note.style.display = 'none'; }, 5000);
+  }
+}
+
 async function generateSuggestionsFromOverallVotes() {
   const note = document.getElementById('overall-suggest-note');
   let voteDocs = [];
