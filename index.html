@@ -190,6 +190,14 @@ input[type=checkbox] { accent-color: var(--accent); width: 18px; height: 18px; }
 .swap-hint { font-size: 13px; color: var(--text-muted); text-align:center; margin-top: 12px; }
 .empty-note { font-size: 14px; color: var(--text-muted); padding: 8px 0; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+.edit-panel { margin-top: 16px; padding: 16px 18px; border-radius: var(--radius-sm); background: var(--surface-2); box-shadow: inset 4px 0 0 var(--pop); }
+.edit-panel h4 { margin: 0 0 10px; font-size: 15px; font-weight: 700; }
+.edit-panel .edit-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+.edit-panel .edit-row select { flex: 1 1 160px; width: auto; background: var(--surface); }
+.edit-panel .edit-note { font-size: 13px; color: var(--text-muted); margin: 8px 0 0; }
+.edit-panel button { padding: 9px 16px; font-size: 13.5px; }
+.edit-add { background: var(--surface-2); }
+.edit-panel .btn-ghost { background: var(--surface); }
 </style>
 </head>
 <body>
@@ -288,7 +296,8 @@ input[type=checkbox] { accent-color: var(--accent); width: 18px; height: 18px; }
       </div>
     </div>
     <div class="diff-line" id="diff-line"></div>
-    <p class="swap-hint">Tocca un giocatore in ciascuna squadra per scambiarli manualmente.</p>
+    <div id="team-edit-panel"></div>
+    <p class="swap-hint">Tocca un giocatore per modificarlo (sostituisci, sposta, togli) oppure toccane uno per squadra per scambiarli.</p>
     <div class="row" style="justify-content:center; margin-top:12px;">
       <button class="btn-primary" onclick="quickSaveMatch()">Salva questa partita (senza risultato)</button>
     </div>
@@ -948,6 +957,7 @@ function renderTeams() {
   document.getElementById('team-b-list').innerHTML = teamB.map((p, i) => teamCardHtml(p, 'B', i)).join('');
   const diff = Math.abs(sumA - sumB);
   document.getElementById('diff-line').textContent = `Differenza tra i totali: ${diff.toFixed(2)} punti`;
+  renderEditPanel();
   renderPitch();
 }
 function teamCardHtml(p, team, index) {
@@ -983,6 +993,114 @@ function onCardClick(team, index) {
   toArr[index] = tmp;
   swapSelection = null;
   renderTeams();
+}
+
+// ---- Modifica delle squadre dopo la creazione (cambi all'ultimo minuto) ----
+function makeTeamPlayer(p) {
+  const detailed = isDetailedRoleMode();
+  return { ...p, score: totalScore(p), roleKey: detailed ? (p.role || DEFAULT_ROLE) : macroOf(p.role || DEFAULT_ROLE) };
+}
+function benchPlayers() {
+  if (!currentTeams) return [];
+  const inTeams = new Set([...currentTeams.teamA, ...currentTeams.teamB].map(p => p.id));
+  return roster.filter(p => !inTeams.has(p.id));
+}
+function teamLabel(t) { return teamMeta.names[t] || (t === 'A' ? 'Squadra A' : 'Squadra B'); }
+function afterTeamEdit() {
+  swapSelection = null;
+  renderChecklist();
+  updateCounter();
+  renderStats();
+  renderTeams();
+}
+function benchOptionsHtml() {
+  return benchPlayers().map(b => `<option value="${b.id}">${escapeHtml(b.name)}</option>`).join('');
+}
+function renderEditPanel() {
+  const box = document.getElementById('team-edit-panel');
+  if (!box) return;
+  if (!currentTeams) { box.innerHTML = ''; return; }
+  const bench = benchPlayers();
+  let html = '';
+  if (swapSelection) {
+    const arr = swapSelection.team === 'A' ? currentTeams.teamA : currentTeams.teamB;
+    const pl = arr[swapSelection.index];
+    if (pl) {
+      const other = swapSelection.team === 'A' ? 'B' : 'A';
+      html += `<div class="edit-panel">
+        <h4>Modifica ${escapeHtml(pl.name)} <span style="font-weight:500; color:var(--text-muted);">· ${escapeHtml(teamLabel(swapSelection.team))}</span></h4>`;
+      if (bench.length) {
+        html += `<div class="edit-row">
+          <select id="edit-sub-select" aria-label="Giocatore che entra">${benchOptionsHtml()}</select>
+          <button class="btn-primary" onclick="substituteSelected()">Sostituisci</button>
+        </div>`;
+      } else {
+        html += `<p class="edit-note">Per sostituirlo, aggiungi prima un altro giocatore alla rosa (sezione 1).</p>`;
+      }
+      html += `<div class="edit-row">
+          <button class="btn-ghost" onclick="moveSelectedToOther()">Passa a ${escapeHtml(teamLabel(other))}</button>
+          <button class="btn-danger-ghost" onclick="removeSelectedFromMatch()">Togli dalla partita</button>
+          <button class="btn-ghost" onclick="swapSelection=null; renderTeams();">Chiudi</button>
+        </div>
+        <p class="edit-note">Per scambiarlo con un giocatore dell'altra squadra, toccalo nell'altra colonna.</p>
+      </div>`;
+    }
+  }
+  if (bench.length) {
+    html += `<div class="edit-panel edit-add" style="box-shadow:none;">
+      <h4>Aggiungi un giocatore all'ultimo minuto</h4>
+      <div class="edit-row">
+        <select id="edit-add-select" aria-label="Giocatore da aggiungere">${benchOptionsHtml()}</select>
+        <select id="edit-add-team" aria-label="Squadra" style="flex:0 1 150px;">
+          <option value="A">${escapeHtml(teamLabel('A'))}</option>
+          <option value="B">${escapeHtml(teamLabel('B'))}</option>
+        </select>
+        <button class="btn-primary" onclick="addToTeam()">Aggiungi</button>
+      </div>
+    </div>`;
+  }
+  if (html && currentTeams === lastSavedTeamsRef) {
+    html += `<p class="edit-note" style="text-align:center;">Questa partita è già nello storico: le modifiche qui non la aggiornano. Correggila dallo Storico con "Modifica".</p>`;
+  }
+  box.innerHTML = html;
+}
+function substituteSelected() {
+  if (!swapSelection || !currentTeams) return;
+  const sel = document.getElementById('edit-sub-select');
+  const incoming = sel && roster.find(p => p.id === sel.value);
+  if (!incoming) return;
+  const arr = swapSelection.team === 'A' ? currentTeams.teamA : currentTeams.teamB;
+  const outgoing = arr[swapSelection.index];
+  if (!outgoing) return;
+  arr[swapSelection.index] = makeTeamPlayer(incoming);
+  selectedIds.delete(outgoing.id);
+  selectedIds.add(incoming.id);
+  afterTeamEdit();
+}
+function moveSelectedToOther() {
+  if (!swapSelection || !currentTeams) return;
+  const from = swapSelection.team === 'A' ? currentTeams.teamA : currentTeams.teamB;
+  const to = swapSelection.team === 'A' ? currentTeams.teamB : currentTeams.teamA;
+  const [pl] = from.splice(swapSelection.index, 1);
+  if (pl) to.push(pl);
+  afterTeamEdit();
+}
+function removeSelectedFromMatch() {
+  if (!swapSelection || !currentTeams) return;
+  const arr = swapSelection.team === 'A' ? currentTeams.teamA : currentTeams.teamB;
+  const [pl] = arr.splice(swapSelection.index, 1);
+  if (pl) selectedIds.delete(pl.id);
+  afterTeamEdit();
+}
+function addToTeam() {
+  if (!currentTeams) return;
+  const sel = document.getElementById('edit-add-select');
+  const teamSel = document.getElementById('edit-add-team');
+  const pl = sel && roster.find(p => p.id === sel.value);
+  if (!pl) return;
+  (teamSel.value === 'B' ? currentTeams.teamB : currentTeams.teamA).push(makeTeamPlayer(pl));
+  selectedIds.add(pl.id);
+  afterTeamEdit();
 }
 
 function escapeHtml(str) {
