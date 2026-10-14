@@ -209,6 +209,19 @@ input[type=checkbox] { accent-color: var(--accent); width: 18px; height: 18px; }
 .lightbox { position: fixed; inset: 0; z-index: 200; background: rgba(5,8,18,.88); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 20px; }
 .lightbox img { max-width: min(92vw, 560px); max-height: 78vh; border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
 .lightbox .row { gap: 10px; }
+.odds-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.odds-grid.two { grid-template-columns: repeat(2, 1fr); }
+.odd-tile { background: var(--surface-2); border-radius: var(--radius-sm); padding: 14px 8px; text-align: center; }
+.odd-tile.fav { box-shadow: inset 0 0 0 2px var(--pop); }
+.odd-key { font-size: 12.5px; color: var(--text-secondary); font-weight: 600; margin-bottom: 4px; overflow-wrap: anywhere; }
+.odd-val { font-family: 'Bricolage Grotesque','DM Sans',sans-serif; font-weight: 800; font-size: 28px; color: var(--accent); line-height: 1.1; }
+.odd-pct { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.odds-market-title { font-weight: 700; font-size: 14.5px; margin: 20px 0 8px; }
+.odds-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-radius: 12px; background: var(--surface-2); margin-bottom: 6px; font-size: 14px; }
+.odds-row .odd-val { font-size: 20px; }
+.odds-row .pct { color: var(--text-muted); font-size: 12px; margin-right: 12px; }
+.odds-head { display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap; font-family: 'Bricolage Grotesque','DM Sans',sans-serif; font-weight: 800; font-size: 20px; margin-bottom: 14px; }
+@media (max-width: 480px) { .odd-val { font-size: 24px; } }
 </style>
 </head>
 <body>
@@ -405,6 +418,13 @@ input[type=checkbox] { accent-color: var(--accent); width: 18px; height: 18px; }
         <div id="ranking-mvp"></div>
       </div>
     </div>
+  </section>
+
+  <section class="card" id="odds-section">
+    <h2><span class="step-num">Q</span>Quotazioni della partita</h2>
+    <p class="hint">Solo per gioco: nessuna puntata e nessun denaro. Le quote si calcolano in base a forza delle squadre, gol e MVP delle partite passate. Più la quota è bassa, più l'esito è probabile.</p>
+    <select id="odds-match-select" onchange="renderOdds()" style="margin-bottom:14px;" aria-label="Partita"></select>
+    <div id="odds-content"></div>
   </section>
 
   <section class="card" id="performance-section">
@@ -1537,6 +1557,149 @@ function posterOpen(id) {
   document.body.appendChild(box);
 }
 
+// ---- Quotazioni (solo per gioco, senza denaro) ----
+const ODDS_MARGIN = 0.95;
+function oddsFrom(p) {
+  const raw = ODDS_MARGIN / Math.max(p, 0.01);
+  return Math.max(1.05, Math.round(raw * 20) / 20);
+}
+function matchHasResult(m) {
+  return Object.values(m.entries || {}).some(e => e && (e.goals > 0 || e.assists > 0 || e.mvp));
+}
+function poissonOver(mu, line) {
+  // P(totale gol > line) con line del tipo k + 0.5
+  const k = Math.floor(line);
+  let cum = 0, term = Math.exp(-mu);
+  for (let i = 0; i <= k; i++) { cum += term; term *= mu / (i + 1); }
+  return 1 - cum;
+}
+function renderOdds() {
+  const sel = document.getElementById('odds-match-select');
+  const box = document.getElementById('odds-content');
+  if (!sel || !box) return;
+  const sorted = matches.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+  if (sorted.length === 0) {
+    sel.style.display = 'none';
+    box.innerHTML = '<p class="empty-note">Nessuna partita in programma: le quotazioni compaiono quando viene salvata una partita.</p>';
+    return;
+  }
+  sel.style.display = '';
+  const prev = sel.value;
+  sel.innerHTML = sorted.map(m => {
+    const d = new Date(m.date).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' });
+    const a = m.teamNames ? m.teamNames.A : 'Squadra A', b = m.teamNames ? m.teamNames.B : 'Squadra B';
+    return `<option value="${m.id}">${escapeHtml(d)} · ${escapeHtml(a)} vs ${escapeHtml(b)}${matchHasResult(m) ? '' : ' (da giocare)'}</option>`;
+  }).join('');
+  const upcoming = sorted.find(m => !matchHasResult(m));
+  sel.value = sorted.some(m => m.id === prev) ? prev : (upcoming || sorted[0]).id;
+  const m = sorted.find(x => x.id === sel.value);
+  const teamA = m.teamA || [], teamB = m.teamB || [];
+  const nameA = m.teamNames ? m.teamNames.A : 'Squadra A', nameB = m.teamNames ? m.teamNames.B : 'Squadra B';
+  const colA = m.teamColors ? m.teamColors.A : '#1c7a52', colB = m.teamColors ? m.teamColors.B : '#d98a00';
+  if (teamA.length === 0 || teamB.length === 0) { box.innerHTML = '<p class="empty-note">Squadre non disponibili per questa partita.</p>'; return; }
+
+  // forza delle squadre: media dei punteggi dei giocatori
+  const avg = list => list.reduce((t, p) => t + (typeof p.score === 'number' ? p.score : 6), 0) / list.length;
+  const x = avg(teamA) - avg(teamB);
+
+  // storico (esclusa questa partita)
+  const past = matches.filter(o => o.id !== m.id);
+  const stats = {};
+  let totGoals = 0, playedWithResult = 0;
+  past.forEach(o => {
+    const ents = o.entries || {};
+    const hasRes = matchHasResult(o);
+    if (hasRes) { playedWithResult++; totGoals += Object.values(ents).reduce((t, e) => t + ((e && e.goals) || 0), 0); }
+    [...(o.teamA || []), ...(o.teamB || [])].forEach(pl => {
+      const st = stats[pl.id] || (stats[pl.id] = { games: 0, goals: 0, mvp: 0 });
+      if (hasRes) { st.games++; st.goals += (ents[pl.id] && ents[pl.id].goals) || 0; if (ents[pl.id] && ents[pl.id].mvp) st.mvp++; }
+    });
+  });
+  const mu = playedWithResult >= 2 ? totGoals / playedWithResult : 8;
+
+  // gol attesi delle due squadre (Poisson indipendenti) e tutte le probabilità da lì
+  const share = 1 / (1 + Math.exp(-0.45 * x));
+  const muA = mu * share, muB = mu * (1 - share);
+  const N = 16;
+  const pmf = lam => { const r = [Math.exp(-lam)]; for (let k = 1; k <= N; k++) r.push(r[k - 1] * lam / k); return r; };
+  const PA = pmf(muA), PB = pmf(muB);
+  let pA = 0, pD = 0, pB = 0, norm = 0;
+  const tot = new Array(2 * N + 1).fill(0), exact = [];
+  for (let i = 0; i <= N; i++) for (let j = 0; j <= N; j++) {
+    const q = PA[i] * PB[j]; norm += q; tot[i + j] += q; exact.push({ i, j, q });
+    if (i > j) pA += q; else if (i === j) pD += q; else pB += q;
+  }
+  pA /= norm; pD /= norm; pB /= norm; tot.forEach((v, k) => { tot[k] = v / norm; }); exact.forEach(e => { e.q /= norm; });
+  const overP = line => tot.reduce((t, v, k) => t + (k > line ? v : 0), 0);
+  const rangeP = (lo, hi) => tot.reduce((t, v, k) => t + (k >= lo && k <= hi ? v : 0), 0);
+  const line = Math.max(0.5, Math.round(mu) - 0.5);
+  const bothScore = (1 - Math.exp(-muA)) * (1 - Math.exp(-muB));
+  const pct = q => Math.round(q * 100) + '%';
+
+  const tile = (key, p, fav, label) => `<div class="odd-tile ${fav ? 'fav' : ''}"><div class="odd-key">${key}</div><div class="odd-val">${oddsFrom(p).toFixed(2)}</div><div class="odd-pct">${label || ''}</div></div>`;
+  const maxP = Math.max(pA, pD, pB);
+
+  const multigol = [];
+  const bins = [[0, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 99]];
+  bins.forEach(([lo, hi]) => { const q = rangeP(lo, hi); if (q >= 0.02) multigol.push({ label: hi === 99 ? lo + '+' : lo + '-' + hi, q }); });
+  const exactTop = exact.slice().sort((u, v) => v.q - u.q).slice(0, 6);
+  const players = [
+    ...teamA.map(p => ({ p, col: colA })),
+    ...teamB.map(p => ({ p, col: colB }))
+  ];
+  const scorerRows = players.map(({ p, col }) => {
+    const st = stats[p.id] || { games: 0, goals: 0, mvp: 0 };
+    const lam = (st.goals + 0.35) / (st.games + 1);
+    return { name: p.name, col, prob: Math.min(0.9, 1 - Math.exp(-lam)) };
+  }).sort((a, b) => b.prob - a.prob).slice(0, 6);
+  const mvpW = players.map(({ p, col }) => {
+    const st = stats[p.id] || { mvp: 0 };
+    const sc = typeof p.score === 'number' ? p.score : 6;
+    return { name: p.name, col, w: Math.exp(0.7 * (sc - 6)) * (1 + 0.4 * st.mvp) };
+  });
+  const wSum = mvpW.reduce((t, r) => t + r.w, 0);
+  const mvpRows = mvpW.map(r => ({ ...r, prob: r.w / wSum })).sort((a, b) => b.prob - a.prob).slice(0, 6);
+  const row = r => `<div class="odds-row" style="border-left:4px solid ${r.col};"><span>${escapeHtml(r.name)}</span><span><span class="pct">${Math.round(r.prob * 100)}%</span><span class="odd-val">${oddsFrom(r.prob).toFixed(2)}</span></span></div>`;
+
+  box.innerHTML = `
+    <div class="odds-head"><span style="color:${colA}">${escapeHtml(nameA)}</span><span style="color:var(--text-muted); font-size:15px;">vs</span><span style="color:${colB}">${escapeHtml(nameB)}</span></div>
+    <div class="odds-market-title" style="margin-top:0;">Esito finale (1 X 2)</div>
+    <div class="odds-grid">
+      ${tile('1 · ' + escapeHtml(nameA), pA, pA === maxP, pct(pA))}
+      ${tile('X · Pareggio', pD, pD === maxP, pct(pD))}
+      ${tile('2 · ' + escapeHtml(nameB), pB, pB === maxP, pct(pB))}
+    </div>
+    <div class="odds-market-title">Doppia chance</div>
+    <div class="odds-grid">
+      ${tile('1X', pA + pD, false, pct(pA + pD))}
+      ${tile('12', pA + pB, false, pct(pA + pB))}
+      ${tile('X2', pD + pB, false, pct(pD + pB))}
+    </div>
+    <div class="odds-market-title">Under / Over gol totali</div>
+    ${[line - 1, line, line + 1].filter(l => l > 0).map(l => { const o = overP(l); return `<div class="odds-row"><span>Linea ${l.toFixed(1)}</span><span><span class="pct">Meno ${pct(1 - o)}</span><span class="odd-val" style="margin-right:14px;">${oddsFrom(1 - o).toFixed(2)}</span><span class="pct">Più ${pct(o)}</span><span class="odd-val">${oddsFrom(o).toFixed(2)}</span></span></div>`; }).join('')}
+    <div class="odds-market-title">Multigol (gol totali)</div>
+    <div class="odds-grid">
+      ${multigol.map(r => tile(r.label, r.q, false, pct(r.q))).join('')}
+    </div>
+    <div class="odds-market-title">Gol / No gol (segnano entrambe)</div>
+    <div class="odds-grid two">
+      ${tile('Gol', bothScore, bothScore >= 0.5, pct(bothScore))}
+      ${tile('No gol', 1 - bothScore, bothScore < 0.5, pct(1 - bothScore))}
+    </div>
+    <div class="odds-market-title">Risultato esatto</div>
+    <div class="odds-grid">
+      ${exactTop.map(r => tile(r.i + ' - ' + r.j, r.q, false, pct(r.q))).join('')}
+    </div>
+    <div class="odds-market-title">Segna almeno un gol</div>
+    ${scorerRows.map(row).join('')}
+    <div class="odds-market-title">MVP della partita</div>
+    ${mvpRows.map(row).join('')}
+    <details style="margin-top:16px;">
+      <summary style="cursor:pointer; font-size:13.5px; color:var(--text-secondary); font-weight:600;">Come si calcolano le quote</summary>
+      <p class="hint" style="margin-top:8px;">Stimo quanti gol farà ogni squadra: in tutto ${mu.toFixed(1)} a partita${playedWithResult >= 2 ? ' (media delle partite giocate)' : ' (stima di partenza: servono almeno 2 partite con risultato)'}, divisi in base alla forza delle squadre (differenza di media punteggio ${x >= 0 ? '+' : ''}${x.toFixed(2)}): ${muA.toFixed(1)} per ${escapeHtml(nameA)} e ${muB.toFixed(1)} per ${escapeHtml(nameB)}. Da qui ricavo tutte le probabilità: esito, doppia chance, under/over, multigol, gol/no gol e risultato esatto. Marcatori: gol fatti per partita da ciascuno, con una piccola base per chi ha giocato poco. MVP: punteggio del giocatore e MVP già vinti. La quota è 0,95 diviso la probabilità, arrotondata a 0,05.</p>
+    </details>`;
+}
+
 function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
@@ -1949,6 +2112,7 @@ function renderHistory() {
   const container = document.getElementById('history-list');
   if (!container) return;
   if (typeof posterPopulateMatches === 'function') posterPopulateMatches();
+  if (typeof renderOdds === 'function') renderOdds();
   if (matches.length === 0) {
     container.innerHTML = '<p class="empty-note">Nessuna partita salvata ancora.</p>';
     return;
@@ -2644,7 +2808,7 @@ document.addEventListener('click', e => {
 // ---- Barra di navigazione: mostra solo le sezioni visibili ----
 const NAV_ITEMS = [
   ['roster-section','Rosa'],['weights-section','Pesi'],['match-section','Partita'],['result-section','Squadre'],
-  ['pitch-section','Campo'],['poster-section','Locandina'],['stats-section','Marcatori'],['rankings-section','Classifiche'],
+  ['pitch-section','Campo'],['poster-section','Locandina'],['stats-section','Marcatori'],['rankings-section','Classifiche'],['odds-section','Quotazioni'],
   ['performance-section','Media voti'],['suggestions-section','Suggerimenti'],['history-section','Storico'],['vote-section','Vota']
 ];
 let navTimer = null, navObserver = null;
@@ -2680,7 +2844,7 @@ document.addEventListener('DOMContentLoaded', () => {
 let isVoteOnlyMode = false;
 function applyVoteOnlyMode() {
   isVoteOnlyMode = true;
-  const visibleIds = ['rankings-section', 'performance-section', 'history-section', 'vote-section'];
+  const visibleIds = ['rankings-section', 'odds-section', 'performance-section', 'history-section', 'vote-section'];
   document.querySelectorAll('section.card').forEach(sec => {
     if (!visibleIds.includes(sec.id)) sec.style.display = 'none';
   });
