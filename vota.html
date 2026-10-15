@@ -222,6 +222,10 @@ input[type=checkbox] { accent-color: var(--accent); width: 18px; height: 18px; }
 .odds-row .pct { color: var(--text-muted); font-size: 12px; margin-right: 12px; }
 .odds-head { display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap; font-family: 'Bricolage Grotesque','DM Sans',sans-serif; font-weight: 800; font-size: 20px; margin-bottom: 14px; }
 @media (max-width: 480px) { .odd-val { font-size: 24px; } }
+.video-frame { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: #000; box-shadow: var(--shadow); }
+.video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.video-play { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; font-size: 16px; color: #fff; background: linear-gradient(135deg, var(--hero-a), var(--hero-b)); box-shadow: var(--shadow); }
+.video-play span { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 50%; background: var(--pop); color: var(--pop-ink); font-size: 22px; padding-left: 4px; }
 </style>
 </head>
 <body>
@@ -1700,6 +1704,19 @@ function renderOdds() {
     </details>`;
 }
 
+// ---- Video della partita (YouTube incorporato) ----
+function youtubeId(url) {
+  if (!url || typeof url !== 'string') return null;
+  const m = url.trim().match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/|v\/))([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+function loadVideo(btn) {
+  const box = btn.closest('.video-box');
+  if (!box) return;
+  const id = box.dataset.vid;
+  btn.outerHTML = `<div class="video-frame"><iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0" title="Video della partita" allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`;
+}
+
 function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
@@ -2154,6 +2171,10 @@ function renderHistory() {
             <label for="edit-date-${m.id}" style="white-space:nowrap; font-size:13px;">Data:</label>
             <input type="date" id="edit-date-${m.id}" value="${isoDate}">
           </div>
+          <div class="row" style="gap:8px; margin-bottom:10px;">
+            <label for="edit-video-${m.id}" style="white-space:nowrap; font-size:13px;">Video:</label>
+            <input type="text" id="edit-video-${m.id}" value="${escapeHtml(m.videoUrl || '')}" placeholder="Incolla il link YouTube della partita">
+          </div>
           <div class="macro-block">
             <div class="macro-title" style="color:${colorA};">${escapeHtml(namesA)}</div>
             ${teamA.map(editRow).join('') || '<p class="empty-note">Nessun giocatore.</p>'}
@@ -2198,6 +2219,10 @@ function renderHistory() {
             <img class="match-poster" src="${posters[m.id]}" alt="Locandina della partita" onclick="posterOpen('${m.id}')">
             ${isVoteOnlyMode ? '' : `<button class="btn-danger-ghost" onclick="posterRemoveFromHistory('${m.id}')">Rimuovi locandina</button>`}
           </div>` : ''}
+          ${youtubeId(m.videoUrl) ? `<div class="video-box" data-vid="${youtubeId(m.videoUrl)}" style="margin:12px 0;">
+            <button type="button" class="video-play" onclick="loadVideo(this)" aria-label="Guarda il video della partita"><span>&#9654;</span> Guarda il video della partita</button>
+            <p style="text-align:center; margin:6px 0 0;"><a href="https://www.youtube.com/watch?v=${youtubeId(m.videoUrl)}" target="_blank" rel="noopener" style="font-size:12.5px; color:var(--text-muted);">Apri su YouTube</a></p>
+          </div>` : ''}
           <div class="macro-block">
             <div class="macro-title" style="color:${colorA};">${escapeHtml(namesA)}</div>
             ${rowsHtml(teamA, colorA)}
@@ -2226,6 +2251,13 @@ function saveMatchEdit(id) {
   const dateInput = document.getElementById('edit-date-' + id);
   if (dateInput && dateInput.value) {
     m.date = new Date(dateInput.value + 'T12:00:00').toISOString();
+  }
+  const videoInput = document.getElementById('edit-video-' + id);
+  if (videoInput) {
+    const raw = videoInput.value.trim();
+    if (!raw) delete m.videoUrl;
+    else if (youtubeId(raw)) m.videoUrl = raw;
+    else { alert('Questo link non sembra un video di YouTube. Incolla il link completo, per esempio https://youtu.be/...'); return; }
   }
   const allPlayers = [...(m.teamA || []), ...(m.teamB || [])];
   const newEntries = {};
