@@ -421,6 +421,10 @@ input[type=checkbox] { accent-color: var(--accent); width: 18px; height: 18px; }
         <div class="team-head"><h3>MVP</h3></div>
         <div id="ranking-mvp"></div>
       </div>
+      <div class="team-col" style="grid-column: 1 / -1;">
+        <div class="team-head"><h3>Autogol</h3></div>
+        <div id="ranking-owngoals"></div>
+      </div>
     </div>
   </section>
 
@@ -1131,12 +1135,19 @@ function renderEditPanel() {
       } else {
         html += `<p class="edit-note">Per sostituirlo, aggiungi prima un altro giocatore alla rosa (sezione 1).</p>`;
       }
+      const otherArr = other === 'A' ? currentTeams.teamA : currentTeams.teamB;
+      if (otherArr.length) {
+        html += `<div class="edit-row">
+          <select id="edit-swap-select" aria-label="Giocatore con cui scambiare">${otherArr.map((o, i) => `<option value="${i}">${escapeHtml(o.name)} (${escapeHtml(teamLabel(other))})</option>`).join('')}</select>
+          <button class="btn-primary" onclick="swapSelectedWithChosen()">Scambia</button>
+        </div>`;
+      }
       html += `<div class="edit-row">
           <button class="btn-ghost" onclick="moveSelectedToOther()">Passa a ${escapeHtml(teamLabel(other))}</button>
           <button class="btn-danger-ghost" onclick="removeSelectedFromMatch()">Togli dalla partita</button>
           <button class="btn-ghost" onclick="swapSelection=null; renderTeams();">Chiudi</button>
         </div>
-        <p class="edit-note">Per scambiarlo con un giocatore dell'altra squadra, toccalo nell'altra colonna.</p>
+        <p class="edit-note">Per scambiarlo con un giocatore dell'altra squadra scegli il nome qui sopra, oppure toccalo nell'altra colonna.</p>
       </div>`;
     }
   }
@@ -1157,6 +1168,19 @@ function renderEditPanel() {
     html += `<p class="edit-note" style="text-align:center;">Questa partita è già nello storico: le modifiche qui non la aggiornano. Correggila dallo Storico con "Modifica".</p>`;
   }
   box.innerHTML = html;
+}
+function swapSelectedWithChosen() {
+  if (!swapSelection || !currentTeams) return;
+  const sel = document.getElementById('edit-swap-select');
+  if (!sel) return;
+  const mine = swapSelection.team === 'A' ? currentTeams.teamA : currentTeams.teamB;
+  const theirs = swapSelection.team === 'A' ? currentTeams.teamB : currentTeams.teamA;
+  const j = parseInt(sel.value, 10);
+  if (isNaN(j) || !theirs[j] || !mine[swapSelection.index]) return;
+  const tmp = mine[swapSelection.index];
+  mine[swapSelection.index] = theirs[j];
+  theirs[j] = tmp;
+  afterTeamEdit();
 }
 function substituteSelected() {
   if (!swapSelection || !currentTeams) return;
@@ -1568,7 +1592,7 @@ function oddsFrom(p) {
   return Math.max(1.05, Math.round(raw * 20) / 20);
 }
 function matchHasResult(m) {
-  return Object.values(m.entries || {}).some(e => e && (e.goals > 0 || e.assists > 0 || e.mvp));
+  return Object.values(m.entries || {}).some(e => e && (e.goals > 0 || e.assists > 0 || e.og > 0 || e.mvp));
 }
 function poissonOver(mu, line) {
   // P(totale gol > line) con line del tipo k + 0.5
@@ -1613,7 +1637,7 @@ function renderOdds() {
   past.forEach(o => {
     const ents = o.entries || {};
     const hasRes = matchHasResult(o);
-    if (hasRes) { playedWithResult++; totGoals += Object.values(ents).reduce((t, e) => t + ((e && e.goals) || 0), 0); }
+    if (hasRes) { playedWithResult++; totGoals += Object.values(ents).reduce((t, e) => t + ((e && e.goals) || 0) + ((e && e.og) || 0), 0); }
     [...(o.teamA || []), ...(o.teamB || [])].forEach(pl => {
       const st = stats[pl.id] || (stats[pl.id] = { games: 0, goals: 0, mvp: 0 });
       if (hasRes) { st.games++; st.goals += (ents[pl.id] && ents[pl.id].goals) || 0; if (ents[pl.id] && ents[pl.id].mvp) st.mvp++; }
@@ -1784,6 +1808,9 @@ function renderStats() {
           <label style="font-size:11px; display:flex; flex-direction:column; align-items:center;">Assist
             <input type="number" min="0" step="1" value="${draft.assists}" style="width:48px;" onchange="updateDraft('${id}','assists',this.value)">
           </label>
+          <label style="font-size:11px; display:flex; flex-direction:column; align-items:center;">Autogol
+            <input type="number" min="0" step="1" value="${draft.og || 0}" style="width:48px;" onchange="updateDraft('${id}','og',this.value)">
+          </label>
           <label style="font-size:12px; display:flex; align-items:center; gap:4px;">
             MVP <input type="radio" name="mvp-radio" ${checked} onchange="setMvp('${id}')">
           </label>
@@ -1794,7 +1821,7 @@ function renderStats() {
 function updateDraft(id, field, value) {
   let v = parseInt(value, 10);
   if (isNaN(v) || v < 0) v = 0;
-  if (!matchDraft[id]) matchDraft[id] = { goals: 0, assists: 0 };
+  if (!matchDraft[id]) matchDraft[id] = { goals: 0, assists: 0, og: 0 };
   matchDraft[id][field] = v;
 }
 function setMvp(id) {
@@ -1824,7 +1851,7 @@ function saveMatch() {
   const entries = {};
   ids.forEach(id => {
     const d = matchDraft[id] || { goals: 0, assists: 0 };
-    entries[id] = { goals: d.goals || 0, assists: d.assists || 0, mvp: mvpDraftId === id };
+    entries[id] = { goals: d.goals || 0, assists: d.assists || 0, og: d.og || 0, mvp: mvpDraftId === id };
   });
   const snapshotOf = list => list.map(p => ({ id: p.id, name: p.name, role: p.role, roleKey: p.roleKey, score: p.score }));
   matches.push({
@@ -1863,10 +1890,11 @@ function saveMatch() {
 
 function computeAggregates() {
   const agg = {};
-  roster.forEach(p => agg[p.id] = { goals: 0, assists: 0, mvp: 0 });
+  roster.forEach(p => agg[p.id] = { goals: 0, assists: 0, mvp: 0, og: 0 });
   matches.forEach(m => {
     Object.keys(m.entries).forEach(id => {
-      if (!agg[id]) agg[id] = { goals: 0, assists: 0, mvp: 0 };
+      if (!agg[id]) agg[id] = { goals: 0, assists: 0, mvp: 0, og: 0 };
+      agg[id].og += m.entries[id].og || 0;
       agg[id].goals += m.entries[id].goals || 0;
       agg[id].assists += m.entries[id].assists || 0;
       if (m.entries[id].mvp) agg[id].mvp += 1;
@@ -1903,6 +1931,16 @@ function renderRankings() {
       <span>${i + 1}. ${escapeHtml(s.name)}</span>
       <span>${valueLabel(s)}</span>
     </div>`).join('') : '<p class="empty-note">Nessun dato ancora: salva una partita per iniziare.</p>';
+
+  const ogList = roster.map(p => ({ id: p.id, name: p.name, og: agg[p.id]?.og || 0 }))
+    .filter(x => x.og > 0)
+    .sort((a, b) => b.og - a.og);
+  const ogEl = document.getElementById('ranking-owngoals');
+  if (ogEl) ogEl.innerHTML = ogList.length ? ogList.map((m, i) => `
+    <div class="team-card" style="cursor:default;">
+      <span>${i + 1}. ${escapeHtml(m.name)}</span>
+      <span>${m.og} autogol</span>
+    </div>`).join('') : '<p class="empty-note">Nessun autogol registrato. Meglio così.</p>';
 
   const mvpEl = document.getElementById('ranking-mvp');
   mvpEl.innerHTML = mvpList.length ? mvpList.map((m, i) => `
@@ -2159,6 +2197,9 @@ function renderHistory() {
               <label style="font-size:11px; display:flex; flex-direction:column; align-items:center;">Assist
                 <input type="number" min="0" step="1" value="${e.assists || 0}" id="edit-assists-${m.id}-${p.id}" style="width:48px;">
               </label>
+              <label style="font-size:11px; display:flex; flex-direction:column; align-items:center;">Autogol
+                <input type="number" min="0" step="1" value="${e.og || 0}" id="edit-og-${m.id}-${p.id}" style="width:48px;">
+              </label>
               <label style="font-size:12px; display:flex; align-items:center; gap:4px;">
                 MVP <input type="radio" name="edit-mvp-${m.id}" id="edit-mvp-${m.id}-${p.id}" ${e.mvp ? 'checked' : ''}>
               </label>
@@ -2190,12 +2231,14 @@ function renderHistory() {
         </div>`;
     }
 
-    const golA = teamA.reduce((sum, p) => sum + (((m.entries && m.entries[p.id]) || {}).goals || 0), 0);
-    const golB = teamB.reduce((sum, p) => sum + (((m.entries && m.entries[p.id]) || {}).goals || 0), 0);
+    const sumField = (list, f) => list.reduce((sum, p) => sum + (((m.entries && m.entries[p.id]) || {})[f] || 0), 0);
+    const golA = sumField(teamA, 'goals') + sumField(teamB, 'og');
+    const golB = sumField(teamB, 'goals') + sumField(teamA, 'og');
     const rowsHtml = (list, color) => list.length ? list.map(p => {
       const e = (m.entries && m.entries[p.id]) || { goals: 0, assists: 0, mvp: false };
       const bits = [];
       if (e.goals) bits.push(`${e.goals}G`);
+      if (e.og) bits.push(`${e.og} aut.`);
       if (e.assists) bits.push(`${e.assists}A`);
       if (e.mvp) bits.push('MVP');
       return `<div style="display:flex; justify-content:space-between; font-size:12px; padding:4px 0 4px 8px; border-left:3px solid ${color};">
@@ -2267,9 +2310,12 @@ function saveMatchEdit(id) {
     const mvpInput = document.getElementById(`edit-mvp-${id}-${p.id}`);
     let goals = parseInt(goalsInput ? goalsInput.value : 0, 10);
     let assists = parseInt(assistsInput ? assistsInput.value : 0, 10);
+    const ogInput = document.getElementById(`edit-og-${id}-${p.id}`);
+    let og = parseInt(ogInput ? ogInput.value : 0, 10);
+    if (isNaN(og) || og < 0) og = 0;
     if (isNaN(goals) || goals < 0) goals = 0;
     if (isNaN(assists) || assists < 0) assists = 0;
-    newEntries[p.id] = { goals, assists, mvp: !!(mvpInput && mvpInput.checked) };
+    newEntries[p.id] = { goals, assists, og, mvp: !!(mvpInput && mvpInput.checked) };
   });
   m.entries = newEntries;
   saveMatches();
