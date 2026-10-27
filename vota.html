@@ -226,6 +226,45 @@ input[type=checkbox] { accent-color: var(--accent); width: 18px; height: 18px; }
 .video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .video-play { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; font-size: 16px; color: #fff; background: linear-gradient(135deg, var(--hero-a), var(--hero-b)); box-shadow: var(--shadow); }
 .video-play span { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 50%; background: var(--pop); color: var(--pop-ink); font-size: 22px; padding-left: 4px; }
+button.odd-tile { display: block; width: 100%; border: 0; border-radius: var(--radius-sm); padding: 14px 8px; background: var(--surface-2); font: inherit; font-weight: 500; color: inherit; cursor: pointer; text-align: center; transition: background .15s, box-shadow .15s, transform .1s; }
+button.odd-tile:hover { background: var(--accent-soft); }
+button.odd-tile.picked, button.odds-row.picked, .odd-mini.picked { background: var(--accent); color: var(--accent-contrast); box-shadow: 0 0 0 3px var(--pop); }
+button.odd-tile.picked .odd-val, button.odd-tile.picked .odd-key, button.odd-tile.picked .odd-pct,
+button.odds-row.picked .odd-val, button.odds-row.picked .pct, .odd-mini.picked .odd-val, .odd-mini.picked .pct { color: var(--accent-contrast); }
+.odd-tile .odd-key, .odd-tile .odd-val, .odd-tile .odd-pct { display: block; }
+button.odds-row { display: flex; width: 100%; border: 0; border-radius: 12px; padding: 10px 14px; background: var(--surface-2); font: inherit; font-weight: 500; color: inherit; cursor: pointer; text-align: left; }
+button.odds-row:hover { background: var(--accent-soft); }
+.odds-row-static { cursor: default; }
+.odd-pair { display: flex; gap: 8px; }
+.odd-mini { border: 0; border-radius: 10px; background: var(--surface); padding: 6px 12px; font: inherit; font-weight: 500; color: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+.odd-mini:hover { background: var(--accent-soft); }
+.odd-mini .odd-val { font-size: 19px; }
+#odds-slip { position: sticky; bottom: 12px; z-index: 20; margin-top: 18px; }
+.slip { background: var(--nav-bg); color: #fff; border-radius: 18px; padding: 14px 16px; box-shadow: 0 12px 34px -8px rgba(0,0,0,.5); }
+.slip[open] { max-height: 62vh; overflow-y: auto; }
+.slip summary { cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 12px; list-style: none; font-weight: 700; font-size: 15px; }
+.slip summary::-webkit-details-marker { display: none; }
+.slip .slip-total { color: var(--pop); font-family: 'Bricolage Grotesque','DM Sans',sans-serif; font-weight: 800; font-size: 22px; }
+.slip-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid rgba(255,255,255,.12); font-size: 14px; }
+.slip-item small { display: block; color: rgba(255,255,255,.62); font-size: 12px; }
+.slip-item button { background: transparent; color: rgba(255,255,255,.7); padding: 4px 8px; font-size: 18px; line-height: 1; }
+.slip-item .o { color: var(--pop); font-weight: 800; white-space: nowrap; }
+.slip-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.slip-actions .btn-primary { background: var(--pop); color: var(--pop-ink); }
+.slip-actions .btn-ghost { background: rgba(255,255,255,.12); color: #fff; }
+.slip-empty { background: var(--surface-2); color: var(--text-muted); border-radius: 14px; padding: 12px 16px; font-size: 13.5px; text-align: center; }
+#slip-print { display: none; }
+@media print {
+  body.printing-slip .topbar, body.printing-slip .hero, body.printing-slip .wrap, body.printing-slip .site-footer { display: none !important; }
+  body.printing-slip { background: #fff !important; }
+  body.printing-slip #slip-print { display: block; color: #000; font-family: 'DM Sans', Arial, sans-serif; padding: 24px; max-width: 560px; margin: 0 auto; }
+  #slip-print h1 { font-size: 28px; margin: 0 0 4px; max-width: none; letter-spacing: 0; color: #000; }
+  #slip-print .sp-sub { font-size: 14px; margin: 0 0 14px; color: #333; }
+  #slip-print .sp-row { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; border-bottom: 1px dashed #888; font-size: 15px; }
+  #slip-print .sp-row small { display: block; color: #555; font-size: 12px; }
+  #slip-print .sp-total { display: flex; justify-content: space-between; font-size: 20px; font-weight: 800; padding: 12px 0; border-top: 3px solid #000; margin-top: 8px; }
+  #slip-print .sp-note { font-size: 12px; color: #555; margin-top: 10px; }
+}
 </style>
 </head>
 <body>
@@ -433,6 +472,7 @@ input[type=checkbox] { accent-color: var(--accent); width: 18px; height: 18px; }
     <p class="hint">Solo per gioco: nessuna puntata e nessun denaro. Le quote si calcolano in base a forza delle squadre, gol e MVP delle partite passate. Più la quota è bassa, più l'esito è probabile.</p>
     <select id="odds-match-select" onchange="renderOdds()" style="margin-bottom:14px;" aria-label="Partita"></select>
     <div id="odds-content"></div>
+    <div id="odds-slip"></div>
   </section>
 
   <section class="card" id="performance-section">
@@ -1609,6 +1649,7 @@ function renderOdds() {
   if (sorted.length === 0) {
     sel.style.display = 'none';
     box.innerHTML = '<p class="empty-note">Nessuna partita in programma: le quotazioni compaiono quando viene salvata una partita.</p>';
+    renderSlip();
     return;
   }
   sel.style.display = '';
@@ -1664,68 +1705,134 @@ function renderOdds() {
   const bothScore = (1 - Math.exp(-muA)) * (1 - Math.exp(-muB));
   const pct = q => Math.round(q * 100) + '%';
 
-  const tile = (key, p, fav, label) => `<div class="odd-tile ${fav ? 'fav' : ''}"><div class="odd-key">${key}</div><div class="odd-val">${oddsFrom(p).toFixed(2)}</div><div class="odd-pct">${label || ''}</div></div>`;
+  const attr = t => escapeHtml(String(t)).replace(/"/g, '&quot;');
+  // tasto selezionabile: group = mercato (una sola scelta per gruppo)
+  const tile = (group, market, sel, p, fav, label) => {
+    const o = oddsFrom(p).toFixed(2);
+    return `<button type="button" class="odd-tile ${fav ? 'fav' : ''}" data-group="${attr(group)}" data-market="${attr(market)}" data-sel="${attr(sel)}" data-odd="${o}" aria-pressed="false" onclick="oddsToggle(this)"><span class="odd-key">${escapeHtml(sel)}</span><span class="odd-val">${o}</span><span class="odd-pct">${label || ''}</span></button>`;
+  };
   const maxP = Math.max(pA, pD, pB);
 
   const multigol = [];
   const bins = [[0, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 99]];
   bins.forEach(([lo, hi]) => { const q = rangeP(lo, hi); if (q >= 0.02) multigol.push({ label: hi === 99 ? lo + '+' : lo + '-' + hi, q }); });
   const exactTop = exact.slice().sort((u, v) => v.q - u.q).slice(0, 6);
+
+  // altri mercati dallo stesso modello
+  const sumExact = f => exact.reduce((t, e) => t + (f(e) ? e.q : 0), 0);
+  const hcpA = sumExact(e => e.i - e.j >= 2);   // A vince con almeno 2 gol di scarto
+  const hcpB = sumExact(e => e.j - e.i >= 2);
+  const marA1 = sumExact(e => e.i - e.j === 1), marA2 = sumExact(e => e.i - e.j === 2), marA3 = sumExact(e => e.i - e.j >= 3);
+  const marB1 = sumExact(e => e.j - e.i === 1), marB2 = sumExact(e => e.j - e.i === 2), marB3 = sumExact(e => e.j - e.i >= 3);
+  const cA_over = sumExact(e => e.i > e.j && e.i + e.j > line), cA_under = sumExact(e => e.i > e.j && e.i + e.j < line);
+  const cB_over = sumExact(e => e.j > e.i && e.i + e.j > line), cB_under = sumExact(e => e.j > e.i && e.i + e.j < line);
+  const lineA = Math.max(0.5, Math.round(muA) - 0.5), lineB = Math.max(0.5, Math.round(muB) - 0.5);
+  const teamOver = (P, L) => P.reduce((t, v, k) => t + (k > L ? v : 0), 0) / P.reduce((t, v) => t + v, 0);
+  const aOver = teamOver(PA, lineA), bOver = teamOver(PB, lineB);
+  const pEven = tot.reduce((t, v, k) => t + (k % 2 === 0 ? v : 0), 0);
+
   const players = [
     ...teamA.map(p => ({ p, col: colA })),
     ...teamB.map(p => ({ p, col: colB }))
   ];
-  const scorerRows = players.map(({ p, col }) => {
-    const st = stats[p.id] || { games: 0, goals: 0, mvp: 0 };
-    const lam = (st.goals + 0.35) / (st.games + 1);
-    return { name: p.name, col, prob: Math.min(0.9, 1 - Math.exp(-lam)) };
-  }).sort((a, b) => b.prob - a.prob).slice(0, 6);
+  const lamOf = id => { const st = stats[id] || { games: 0, goals: 0, mvp: 0 }; return (st.goals + 0.35) / (st.games + 1); };
+  const scorerRows = players.map(({ p, col }) => ({ id: p.id, name: p.name, col, prob: Math.min(0.9, 1 - Math.exp(-lamOf(p.id))) }))
+    .sort((a, b) => b.prob - a.prob).slice(0, 6);
+  const doubleRows = players.map(({ p, col }) => { const l = lamOf(p.id); return { id: p.id, name: p.name, col, prob: Math.min(0.6, 1 - Math.exp(-l) * (1 + l)) }; })
+    .sort((a, b) => b.prob - a.prob).slice(0, 6);
   const mvpW = players.map(({ p, col }) => {
     const st = stats[p.id] || { mvp: 0 };
     const sc = typeof p.score === 'number' ? p.score : 6;
-    return { name: p.name, col, w: Math.exp(0.7 * (sc - 6)) * (1 + 0.4 * st.mvp) };
+    return { id: p.id, name: p.name, col, w: Math.exp(0.7 * (sc - 6)) * (1 + 0.4 * st.mvp) };
   });
   const wSum = mvpW.reduce((t, r) => t + r.w, 0);
   const mvpRows = mvpW.map(r => ({ ...r, prob: r.w / wSum })).sort((a, b) => b.prob - a.prob).slice(0, 6);
-  const row = r => `<div class="odds-row" style="border-left:4px solid ${r.col};"><span>${escapeHtml(r.name)}</span><span><span class="pct">${Math.round(r.prob * 100)}%</span><span class="odd-val">${oddsFrom(r.prob).toFixed(2)}</span></span></div>`;
+  const playerRow = (market, groupOf) => r => {
+    const o = oddsFrom(r.prob).toFixed(2);
+    return `<button type="button" class="odds-row" style="border-left:4px solid ${r.col};" data-group="${attr(groupOf(r))}" data-market="${attr(market)}" data-sel="${attr(r.name)}" data-odd="${o}" aria-pressed="false" onclick="oddsToggle(this)"><span>${escapeHtml(r.name)}</span><span><span class="pct">${Math.round(r.prob * 100)}%</span><span class="odd-val">${o}</span></span></button>`;
+  };
+  const ouRow = l => {
+    const o = overP(l);
+    const mini = (sel, pr) => { const od = oddsFrom(pr).toFixed(2); return `<button type="button" class="odd-mini" data-group="ou:${l}" data-market="Gol totali ${l.toFixed(1)}" data-sel="${sel}" data-odd="${od}" aria-pressed="false" onclick="oddsToggle(this)"><span class="pct">${sel} ${pct(pr)}</span><span class="odd-val">${od}</span></button>`; };
+    return `<div class="odds-row odds-row-static"><span>Linea ${l.toFixed(1)}</span><span class="odd-pair">${mini('Meno', 1 - o)}${mini('Più', o)}</span></div>`;
+  };
 
   box.innerHTML = `
     <div class="odds-head"><span style="color:${colA}">${escapeHtml(nameA)}</span><span style="color:var(--text-muted); font-size:15px;">vs</span><span style="color:${colB}">${escapeHtml(nameB)}</span></div>
+    <p class="hint" style="text-align:center; margin:-6px 0 14px;">Tocca le quote per aggiungerle alla tua schedina.</p>
     <div class="odds-market-title" style="margin-top:0;">Esito finale (1 X 2)</div>
     <div class="odds-grid">
-      ${tile('1 · ' + escapeHtml(nameA), pA, pA === maxP, pct(pA))}
-      ${tile('X · Pareggio', pD, pD === maxP, pct(pD))}
-      ${tile('2 · ' + escapeHtml(nameB), pB, pB === maxP, pct(pB))}
+      ${tile('esito', 'Esito finale', '1 · ' + nameA, pA, pA === maxP, pct(pA))}
+      ${tile('esito', 'Esito finale', 'X · Pareggio', pD, pD === maxP, pct(pD))}
+      ${tile('esito', 'Esito finale', '2 · ' + nameB, pB, pB === maxP, pct(pB))}
     </div>
     <div class="odds-market-title">Doppia chance</div>
     <div class="odds-grid">
-      ${tile('1X', pA + pD, false, pct(pA + pD))}
-      ${tile('12', pA + pB, false, pct(pA + pB))}
-      ${tile('X2', pD + pB, false, pct(pD + pB))}
+      ${tile('dc', 'Doppia chance', '1X', pA + pD, false, pct(pA + pD))}
+      ${tile('dc', 'Doppia chance', '12', pA + pB, false, pct(pA + pB))}
+      ${tile('dc', 'Doppia chance', 'X2', pD + pB, false, pct(pD + pB))}
     </div>
     <div class="odds-market-title">Under / Over gol totali</div>
-    ${[line - 1, line, line + 1].filter(l => l > 0).map(l => { const o = overP(l); return `<div class="odds-row"><span>Linea ${l.toFixed(1)}</span><span><span class="pct">Meno ${pct(1 - o)}</span><span class="odd-val" style="margin-right:14px;">${oddsFrom(1 - o).toFixed(2)}</span><span class="pct">Più ${pct(o)}</span><span class="odd-val">${oddsFrom(o).toFixed(2)}</span></span></div>`; }).join('')}
+    ${[line - 1, line, line + 1].filter(l => l > 0).map(ouRow).join('')}
     <div class="odds-market-title">Multigol (gol totali)</div>
     <div class="odds-grid">
-      ${multigol.map(r => tile(r.label, r.q, false, pct(r.q))).join('')}
+      ${multigol.map(r => tile('multigol', 'Multigol', r.label + ' gol', r.q, false, pct(r.q))).join('')}
     </div>
     <div class="odds-market-title">Gol / No gol (segnano entrambe)</div>
     <div class="odds-grid two">
-      ${tile('Gol', bothScore, bothScore >= 0.5, pct(bothScore))}
-      ${tile('No gol', 1 - bothScore, bothScore < 0.5, pct(1 - bothScore))}
+      ${tile('gng', 'Gol / No gol', 'Gol', bothScore, bothScore >= 0.5, pct(bothScore))}
+      ${tile('gng', 'Gol / No gol', 'No gol', 1 - bothScore, bothScore < 0.5, pct(1 - bothScore))}
+    </div>
+    <div class="odds-market-title">Handicap ±1,5</div>
+    <div class="odds-grid two">
+      ${tile('hcpA', 'Handicap', nameA + ' −1,5', hcpA, false, pct(hcpA))}
+      ${tile('hcpA', 'Handicap', nameB + ' +1,5', 1 - hcpA, false, pct(1 - hcpA))}
+      ${tile('hcpB', 'Handicap', nameB + ' −1,5', hcpB, false, pct(hcpB))}
+      ${tile('hcpB', 'Handicap', nameA + ' +1,5', 1 - hcpB, false, pct(1 - hcpB))}
+    </div>
+    <div class="odds-market-title">Margine di vittoria</div>
+    <div class="odds-grid">
+      ${tile('margine', 'Margine di vittoria', nameA + ' di 1 gol', marA1, false, pct(marA1))}
+      ${tile('margine', 'Margine di vittoria', nameA + ' di 2 gol', marA2, false, pct(marA2))}
+      ${tile('margine', 'Margine di vittoria', nameA + ' di 3+ gol', marA3, false, pct(marA3))}
+      ${tile('margine', 'Margine di vittoria', nameB + ' di 1 gol', marB1, false, pct(marB1))}
+      ${tile('margine', 'Margine di vittoria', nameB + ' di 2 gol', marB2, false, pct(marB2))}
+      ${tile('margine', 'Margine di vittoria', nameB + ' di 3+ gol', marB3, false, pct(marB3))}
+    </div>
+    <div class="odds-market-title">Esito + Under/Over ${line.toFixed(1)}</div>
+    <div class="odds-grid two">
+      ${tile('combo', 'Esito + gol', '1 + Più di ' + line.toFixed(1), cA_over, false, pct(cA_over))}
+      ${tile('combo', 'Esito + gol', '1 + Meno di ' + line.toFixed(1), cA_under, false, pct(cA_under))}
+      ${tile('combo', 'Esito + gol', '2 + Più di ' + line.toFixed(1), cB_over, false, pct(cB_over))}
+      ${tile('combo', 'Esito + gol', '2 + Meno di ' + line.toFixed(1), cB_under, false, pct(cB_under))}
+    </div>
+    <div class="odds-market-title">Gol di una singola squadra</div>
+    <div class="odds-grid two">
+      ${tile('tgA', 'Gol ' + nameA, 'Più di ' + lineA.toFixed(1), aOver, false, nameA + ' · ' + pct(aOver))}
+      ${tile('tgA', 'Gol ' + nameA, 'Meno di ' + lineA.toFixed(1), 1 - aOver, false, nameA + ' · ' + pct(1 - aOver))}
+      ${tile('tgB', 'Gol ' + nameB, 'Più di ' + lineB.toFixed(1), bOver, false, nameB + ' · ' + pct(bOver))}
+      ${tile('tgB', 'Gol ' + nameB, 'Meno di ' + lineB.toFixed(1), 1 - bOver, false, nameB + ' · ' + pct(1 - bOver))}
+    </div>
+    <div class="odds-market-title">Gol totali pari / dispari</div>
+    <div class="odds-grid two">
+      ${tile('pd', 'Pari / dispari', 'Pari', pEven, false, pct(pEven))}
+      ${tile('pd', 'Pari / dispari', 'Dispari', 1 - pEven, false, pct(1 - pEven))}
     </div>
     <div class="odds-market-title">Risultato esatto</div>
     <div class="odds-grid">
-      ${exactTop.map(r => tile(r.i + ' - ' + r.j, r.q, false, pct(r.q))).join('')}
+      ${exactTop.map(r => tile('esatto', 'Risultato esatto', r.i + ' - ' + r.j, r.q, false, pct(r.q))).join('')}
     </div>
     <div class="odds-market-title">Segna almeno un gol</div>
-    ${scorerRows.map(row).join('')}
+    ${scorerRows.map(playerRow('Segna almeno un gol', r => 'scorer:' + r.id)).join('')}
+    <div class="odds-market-title">Doppietta (2 o più gol)</div>
+    ${doubleRows.map(playerRow('Doppietta', r => 'doppia:' + r.id)).join('')}
     <div class="odds-market-title">MVP della partita</div>
-    ${mvpRows.map(row).join('')}
+    ${mvpRows.map(playerRow('MVP', () => 'mvp')).join('')}
     <details style="margin-top:16px;">
       <summary style="cursor:pointer; font-size:13.5px; color:var(--text-secondary); font-weight:600;">Come si calcolano le quote</summary>
-      <p class="hint" style="margin-top:8px;">Stimo quanti gol farà ogni squadra: in tutto ${mu.toFixed(1)} a partita${playedWithResult >= 2 ? ' (media delle partite giocate)' : ' (stima di partenza: servono almeno 2 partite con risultato)'}, divisi in base alla forza delle squadre (differenza di media punteggio ${x >= 0 ? '+' : ''}${x.toFixed(2)}): ${muA.toFixed(1)} per ${escapeHtml(nameA)} e ${muB.toFixed(1)} per ${escapeHtml(nameB)}. Da qui ricavo tutte le probabilità: esito, doppia chance, under/over, multigol, gol/no gol e risultato esatto. Marcatori: gol fatti per partita da ciascuno, con una piccola base per chi ha giocato poco. MVP: punteggio del giocatore e MVP già vinti. La quota è 0,95 diviso la probabilità, arrotondata a 0,05.</p>
+      <p class="hint" style="margin-top:8px;">Stimo quanti gol farà ogni squadra: in tutto ${mu.toFixed(1)} a partita${playedWithResult >= 2 ? ' (media delle partite giocate)' : ' (stima di partenza: servono almeno 2 partite con risultato)'}, divisi in base alla forza delle squadre (differenza di media punteggio ${x >= 0 ? '+' : ''}${x.toFixed(2)}): ${muA.toFixed(1)} per ${escapeHtml(nameA)} e ${muB.toFixed(1)} per ${escapeHtml(nameB)}. Da qui ricavo tutte le probabilità: esito, doppia chance, under/over, multigol, gol/no gol, handicap, margine di vittoria, combinazioni, gol di una squadra, pari/dispari e risultato esatto. Marcatori e doppietta: gol fatti per partita da ciascuno, con una piccola base per chi ha giocato poco. MVP: punteggio del giocatore e MVP già vinti. La quota è 0,95 diviso la probabilità, arrotondata a 0,05. Nella schedina la quota totale è il prodotto delle quote scelte.</p>
     </details>`;
+  oddsRestorePicks(m);
 }
 
 // ---- Video della partita (YouTube incorporato) ----
@@ -1739,6 +1846,138 @@ function loadVideo(btn) {
   if (!box) return;
   const id = box.dataset.vid;
   btn.outerHTML = `<div class="video-frame"><iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0" title="Video della partita" allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`;
+}
+
+// ---- Schedina: quote selezionabili, quota totale, immagine e stampa ----
+const ODDS_PICKS_KEY = 'squadre-oddspicks-v1';
+let oddsPicks = (() => { try { return JSON.parse(localStorage.getItem(ODDS_PICKS_KEY) || '{}'); } catch (e) { return {}; } })();
+function saveOddsPicks() { try { localStorage.setItem(ODDS_PICKS_KEY, JSON.stringify(oddsPicks)); } catch (e) {} }
+function currentOddsMatch() {
+  const sel = document.getElementById('odds-match-select');
+  return sel ? matches.find(x => x.id === sel.value) : null;
+}
+function oddsToggle(btn) {
+  const m = currentOddsMatch();
+  if (!m) return;
+  const list = oddsPicks[m.id] = oddsPicks[m.id] || [];
+  const group = btn.dataset.group;
+  const idx = list.findIndex(x => x.group === group);
+  const same = idx >= 0 && list[idx].sel === btn.dataset.sel && list[idx].market === btn.dataset.market;
+  if (idx >= 0) list.splice(idx, 1);
+  if (!same) list.push({ group, market: btn.dataset.market, sel: btn.dataset.sel, odd: parseFloat(btn.dataset.odd) });
+  saveOddsPicks();
+  oddsRestorePicks(m);
+}
+function oddsRestorePicks(m) {
+  const list = (oddsPicks[m.id] || []);
+  const kept = [];
+  document.querySelectorAll('#odds-content [data-group]').forEach(b => { b.classList.remove('picked'); b.setAttribute('aria-pressed', 'false'); });
+  list.forEach(pk => {
+    const b = [...document.querySelectorAll('#odds-content [data-group]')].find(x => x.dataset.group === pk.group && x.dataset.sel === pk.sel && x.dataset.market === pk.market);
+    if (!b) return;
+    pk.odd = parseFloat(b.dataset.odd);
+    b.classList.add('picked'); b.setAttribute('aria-pressed', 'true');
+    kept.push(pk);
+  });
+  oddsPicks[m.id] = kept;
+  renderSlip();
+}
+let slipOpen = false;
+function slipTotal(list) { return list.reduce((t, x) => t * x.odd, 1); }
+function slipTotalText(list) { const t = slipTotal(list); return t >= 1000 ? t.toFixed(0) : t.toFixed(2); }
+function slipRemove(i) {
+  const m = currentOddsMatch(); if (!m) return;
+  (oddsPicks[m.id] || []).splice(i, 1); saveOddsPicks(); oddsRestorePicks(m);
+}
+function slipClear() {
+  const m = currentOddsMatch(); if (!m) return;
+  oddsPicks[m.id] = []; saveOddsPicks(); oddsRestorePicks(m);
+}
+function slipMatchTitle(m) {
+  const a = m.teamNames ? m.teamNames.A : 'Squadra A', b = m.teamNames ? m.teamNames.B : 'Squadra B';
+  const d = new Date(m.date).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+  return { title: `${a} vs ${b}`, date: d };
+}
+function renderSlip() {
+  const box = document.getElementById('odds-slip');
+  const pr = document.getElementById('slip-print');
+  const m = currentOddsMatch();
+  if (!box) return;
+  const list = m ? (oddsPicks[m.id] || []) : [];
+  if (!m || list.length === 0) {
+    box.innerHTML = m ? '<div class="slip-empty">La tua schedina è vuota: tocca le quote per aggiungerle.</div>' : '';
+    if (pr) pr.innerHTML = '';
+    return;
+  }
+  box.innerHTML = `<details class="slip" ${slipOpen ? 'open' : ''} ontoggle="slipOpen = this.open">
+    <summary><span>La tua schedina · ${list.length} ${list.length === 1 ? 'scelta' : 'scelte'}</span><span>Quota totale <span class="slip-total">${slipTotalText(list)}</span></span></summary>
+    ${list.map((x, i) => `<div class="slip-item"><span>${escapeHtml(x.sel)}<small>${escapeHtml(x.market)}</small></span><span class="row" style="gap:4px;"><span class="o">${x.odd.toFixed(2)}</span><button type="button" aria-label="Togli dalla schedina" onclick="slipRemove(${i})">&times;</button></span></div>`).join('')}
+    <div class="slip-actions">
+      <button type="button" class="btn-primary" onclick="slipShare()">Condividi immagine</button>
+      <button type="button" class="btn-ghost" onclick="slipPrint()">Stampa</button>
+      <button type="button" class="btn-ghost" onclick="slipClear()">Svuota</button>
+    </div>
+  </details>`;
+  if (pr) {
+    const t = slipMatchTitle(m);
+    pr.innerHTML = `<h1>Schedina</h1><p class="sp-sub">${escapeHtml(t.title)} · ${escapeHtml(t.date)}</p>
+      ${list.map(x => `<div class="sp-row"><span>${escapeHtml(x.sel)}<small>${escapeHtml(x.market)}</small></span><strong>${x.odd.toFixed(2)}</strong></div>`).join('')}
+      <div class="sp-total"><span>Quota totale</span><span>${slipTotalText(list)}</span></div>
+      <p class="sp-note">Solo per gioco: nessuna puntata e nessun denaro.</p>`;
+  }
+}
+function slipPrint() {
+  const m = currentOddsMatch(); if (!m || !(oddsPicks[m.id] || []).length) return;
+  renderSlip();
+  document.body.classList.add('printing-slip');
+  const done = () => { document.body.classList.remove('printing-slip'); window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
+  setTimeout(() => { try { window.print(); } catch (e) { done(); } }, 50);
+}
+async function slipBlob() {
+  const m = currentOddsMatch(); if (!m) return null;
+  const list = oddsPicks[m.id] || []; if (!list.length) return null;
+  try { await document.fonts.load('800 40px "Bricolage Grotesque"'); await document.fonts.load('600 30px "DM Sans"'); } catch (e) {}
+  const W = 1080, rowH = 104, top = 330, H = top + list.length * rowH + 230;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+  const fam = '"Bricolage Grotesque","DM Sans",sans-serif', YEL = '#ffd23f';
+  const bg = ctx.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#0a1530'); bg.addColorStop(1, '#16328c');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  ctx.textBaseline = 'alphabetic';
+  ctx.textAlign = 'center'; ctx.fillStyle = YEL; ctx.font = `800 96px ${fam}`; ctx.fillText('SCHEDINA', W / 2, 140);
+  const t = slipMatchTitle(m);
+  ctx.fillStyle = '#fff'; ctx.font = `700 44px ${fam}`;
+  let fs = 44; while (ctx.measureText(t.title).width > W - 120 && fs > 24) { fs -= 2; ctx.font = `700 ${fs}px ${fam}`; }
+  ctx.fillText(t.title, W / 2, 214);
+  ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.font = '600 32px "DM Sans",sans-serif'; ctx.fillText(t.date, W / 2, 262);
+  list.forEach((x, i) => {
+    const y = top + i * rowH;
+    ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(50, y, W - 100, rowH - 14, 22) : ctx.rect(50, y, W - 100, rowH - 14); ctx.fill();
+    ctx.textAlign = 'left'; ctx.fillStyle = '#fff'; ctx.font = `700 34px ${fam}`;
+    let f2 = 34; while (ctx.measureText(x.sel).width > W - 330 && f2 > 20) { f2 -= 2; ctx.font = `700 ${f2}px ${fam}`; }
+    ctx.fillText(x.sel, 80, y + 42);
+    ctx.fillStyle = 'rgba(255,255,255,.65)'; ctx.font = '600 24px "DM Sans",sans-serif'; ctx.fillText(x.market, 80, y + 74);
+    ctx.textAlign = 'right'; ctx.fillStyle = YEL; ctx.font = `800 44px ${fam}`; ctx.fillText(x.odd.toFixed(2), W - 80, y + 58);
+  });
+  const by = top + list.length * rowH + 20;
+  ctx.fillStyle = YEL; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(50, by, W - 100, 120, 30) : ctx.rect(50, by, W - 100, 120); ctx.fill();
+  ctx.fillStyle = '#10142a'; ctx.textAlign = 'left'; ctx.font = `800 40px ${fam}`; ctx.fillText('QUOTA TOTALE', 90, by + 74);
+  ctx.textAlign = 'right'; ctx.font = `800 62px ${fam}`; ctx.fillText(slipTotalText(list), W - 90, by + 80);
+  ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.font = '600 24px "DM Sans",sans-serif';
+  ctx.fillText('SOLO PER GIOCO · NESSUN DENARO', W / 2, H - 28);
+  return new Promise(res => c.toBlob(res, 'image/png'));
+}
+async function slipShare() {
+  const blob = await slipBlob(); if (!blob) return;
+  const file = new File([blob], 'schedina.png', { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: 'Schedina' }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'schedina.png';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
 function escapeHtml(str) {
@@ -2969,5 +3208,6 @@ initSync().finally(() => {
   updateVoteModeNote();
 });
 </script>
+<div id="slip-print" aria-hidden="true"></div>
 </body>
 </html>
