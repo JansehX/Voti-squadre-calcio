@@ -2479,7 +2479,7 @@ function renderHistory() {
         const e = (m.entries && m.entries[p.id]) || { goals: 0, assists: 0, mvp: false };
         return `
           <div class="check-row" style="justify-content:space-between;">
-            <span>${escapeHtml(p.name)}</span>
+            <span>${pnameHtml(p.id, p.name, 22)}</span>
             <span class="row" style="gap:10px;">
               <label style="font-size:11px; display:flex; flex-direction:column; align-items:center;">Gol
                 <input type="number" min="0" step="1" value="${e.goals || 0}" id="edit-goals-${m.id}-${p.id}" style="width:48px;">
@@ -2532,7 +2532,7 @@ function renderHistory() {
       if (e.assists) bits.push(`${e.assists}A`);
       if (e.mvp) bits.push('MVP');
       return `<div style="display:flex; justify-content:space-between; font-size:12px; padding:4px 0 4px 8px; border-left:3px solid ${color};">
-        <span>${escapeHtml(p.name)} <span style="color:var(--text-muted);">(${roleKeyLabel(p.roleKey)})</span></span>
+        <span style="display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap;">${pnameHtml(p.id, p.name, 22)} <span style="color:var(--text-muted);">(${roleKeyLabel(p.roleKey)})</span></span>
         <span style="color:var(--text-muted);">${bits.join(' · ') || '-'}</span>
       </div>`;
     }).join('') : '<p class="empty-note" style="padding:2px 0;">Nessun giocatore registrato.</p>';
@@ -3081,8 +3081,8 @@ function avatarHtml(id, size) {
   const ini = escapeHtml(playerNameOf(id).trim().slice(0, 2).toUpperCase());
   return `<span class="avatar" style="${st}background:${avatarColor(id)};font-size:${Math.round(size * 0.4)}px;">${ini}</span>`;
 }
-function pnameHtml(id, name) {
-  return `<button type="button" class="pname" onclick="openPlayer('${id}')">${avatarHtml(id, 26)}<span class="pn">${escapeHtml(name)}</span></button>`;
+function pnameHtml(id, name, size) {
+  return `<button type="button" class="pname" onclick="openPlayer('${id}')">${avatarHtml(id, size || 26)}<span class="pn">${escapeHtml(name)}</span></button>`;
 }
 async function loadAvatarsFromDb() {
   if (!db) return;
@@ -3101,11 +3101,18 @@ async function loadAvatarsFromDb() {
     if (isVoteOnlyMode) Object.keys(avatars).forEach(id => { if (!seen.has(id)) { delete avatars[id]; changed = true; } });
     if (changed) {
       saveAvatarsLocal();
-      renderRankings();
-      subscribeOverallPerformance();
+      refreshAvatarViews();
       if (playerModalId) openPlayer(playerModalId);
     }
   } catch (e) { console.error('Errore leggendo le foto dei giocatori:', e); }
+}
+function refreshAvatarViews() {
+  const open = new Set(Array.from(document.querySelectorAll('#history-list details.player[open]')).map(d => d.dataset.id));
+  renderRankings();
+  subscribeOverallPerformance();
+  renderRoster();
+  renderHistory();
+  document.querySelectorAll('#history-list details.player').forEach(d => { if (open.has(d.dataset.id)) d.open = true; });
 }
 function avatarUpload(id, input) {
   const file = input.files && input.files[0];
@@ -3129,9 +3136,7 @@ function avatarUpload(id, input) {
         try { await db.collection('avatars').doc(id).set({ playerId: id, image: url, updatedAt: new Date().toISOString() }); okDb = true; }
         catch (e) { console.error('Errore salvando la foto online:', e); }
       }
-      renderRankings();
-      subscribeOverallPerformance();
-      renderRoster();
+      refreshAvatarViews();
       openPlayer(id);
       if (!okDb) say('Foto salvata solo su questo dispositivo: online non è passata (controlla le regole di Firestore per "avatars").');
       else if (!okLocal) say('Spazio del browser pieno: la foto non è stata salvata qui.');
@@ -3147,9 +3152,7 @@ async function avatarRemove(id) {
   delete avatars[id];
   saveAvatarsLocal();
   if (db) { try { await db.collection('avatars').doc(id).delete(); } catch (e) { console.error(e); } }
-  renderRankings();
-  subscribeOverallPerformance();
-  renderRoster();
+  refreshAvatarViews();
   openPlayer(id);
 }
 function pmScore(m) {
