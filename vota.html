@@ -229,6 +229,18 @@ input[type=checkbox] { accent-color: var(--accent); width: 18px; height: 18px; }
 button.odd-tile { display: block; width: 100%; border: 0; border-radius: var(--radius-sm); padding: 14px 8px; background: var(--surface-2); font: inherit; font-weight: 500; color: inherit; cursor: pointer; text-align: center; transition: background .15s, box-shadow .15s, transform .1s; }
 button.odd-tile:hover { background: var(--accent-soft); }
 button.odd-tile.picked, button.odds-row.picked, .odd-mini.picked { background: var(--accent); color: var(--accent-contrast); box-shadow: 0 0 0 3px var(--pop); }
+.mvp-poll { margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--border); }
+.mvp-team { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-secondary); margin: 14px 0 6px; }
+.mvp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+button.mvp-opt { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 10px; background: var(--surface-2); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; text-align: center; transition: background .15s, box-shadow .15s; }
+button.mvp-opt:hover:not(:disabled) { background: var(--accent-soft); }
+button.mvp-opt.picked { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); box-shadow: 0 0 0 3px var(--pop); }
+button.mvp-opt:disabled { cursor: default; opacity: .75; }
+button.mvp-opt.picked:disabled { opacity: 1; }
+.mvp-bar { position: relative; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 12px; margin-bottom: 6px; border-radius: var(--radius-sm); background: var(--surface-2); overflow: hidden; }
+.mvp-bar > i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent-soft); z-index: 0; }
+.mvp-bar > span { position: relative; z-index: 1; }
+.mvp-bar.top { box-shadow: inset 0 0 0 2px var(--pop); }
 button.odd-tile.picked .odd-val, button.odd-tile.picked .odd-key, button.odd-tile.picked .odd-pct,
 button.odds-row.picked .odd-val, button.odds-row.picked .pct, .odd-mini.picked .odd-val, .odd-mini.picked .pct { color: var(--accent-contrast); }
 .odd-tile .odd-key, .odd-tile .odd-val, .odd-tile .odd-pct { display: block; }
@@ -501,7 +513,7 @@ button.odds-row:hover { background: var(--accent-soft); }
 
   <section class="card" id="vote-section">
     <h2><span class="step-num">11</span>Voto della prestazione tra amici</h2>
-    <p class="hint">Condividi questo link con chi ha giocato: ognuno sceglie la partita, la propria squadra e se stesso, poi vota da 0 a 10 la prestazione dei compagni. Non tocca i voti tecnici della rosa.</p>
+    <p class="hint">Condividi questo link con chi ha giocato: ognuno sceglie la partita, la propria squadra e se stesso, poi vota da 0 a 10 la prestazione dei compagni. Più sotto trovi anche il sondaggio MVP della partita. Non tocca i voti tecnici della rosa.</p>
     <p class="hint" id="vote-mode-note" style="display:none;"></p>
     <div class="row" style="margin-bottom:14px;">
       <button class="btn-ghost" onclick="copyVoteLink()">Copia link da condividere</button>
@@ -521,6 +533,19 @@ button.odds-row:hover { background: var(--accent-soft); }
     </div>
     <p class="hint" id="vote-saved-note" style="display:none;"></p>
     <div id="vote-results" style="margin-top:18px;"></div>
+
+    <div class="mvp-poll" id="mvp-poll">
+      <div class="macro-title">Sondaggio MVP della partita</div>
+      <p class="hint">Un solo voto a testa. Scegli chi sei, poi tocca il giocatore che per te è stato il migliore in campo: ci sono tutti quelli della partita, di entrambe le squadre. Non puoi votare te stesso.</p>
+      <select id="mvp-self-select" onchange="mvpRenderChoices()" aria-label="Chi sei"></select>
+      <div id="mvp-choices"></div>
+      <p class="hint" id="mvp-lock-note" style="display:none; color: var(--accent);"></p>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn-primary" id="mvp-submit-btn" onclick="submitMvpVote()">Invia il mio MVP</button>
+      </div>
+      <p class="hint" id="mvp-saved-note" style="display:none;"></p>
+      <div id="mvp-results" style="margin-top:14px;"></div>
+    </div>
   </section>
 </div>
 <footer class="site-footer">
@@ -2664,8 +2689,19 @@ async function clearAllVotesClick() {
   saveLocalVotes({});
   votedMatches = {};
   saveVotedMatches();
+  if (db) {
+    try {
+      const mc = db.collection('mvp-votes');
+      const ms = await mc.get();
+      await Promise.all(ms.docs.map(d => mc.doc(d.id).delete()));
+    } catch (e) { console.error('Errore cancellando i voti MVP:', e); }
+  }
+  saveLocalMvp({});
+  mvpVoted = {};
+  saveMvpVoted();
   const cm = currentVoteMatch();
   if (cm) subscribeVoteResults(cm.id);
+  mvpInit();
   subscribeOverallPerformance();
   applyVoteLockState();
   note.style.color = ok ? 'var(--accent)' : 'var(--danger)';
@@ -2727,6 +2763,7 @@ function onVoteMatchChange() {
     document.getElementById('vote-self-select').innerHTML = '';
     document.getElementById('vote-form').innerHTML = '';
     subscribeVoteResults(null);
+    mvpInit();
     return;
   }
   const nA = m.teamNames ? m.teamNames.A : 'Squadra A';
@@ -2734,6 +2771,7 @@ function onVoteMatchChange() {
   teamSelect.innerHTML = `<option value="A">${escapeHtml(nA)}</option><option value="B">${escapeHtml(nB)}</option>`;
   onVoteTeamChange();
   subscribeVoteResults(m.id);
+  mvpInit();
 }
 function onVoteTeamChange() {
   const m = currentVoteMatch();
@@ -2827,6 +2865,172 @@ function subscribeVoteResults(matchId) {
   } catch (e) {
     container.innerHTML = '<p class="empty-note">Impossibile leggere i voti in questo momento.</p>';
   }
+}
+/* ---- Sondaggio MVP della partita (collezione separata: mvp-votes) ---- */
+const LOCAL_MVP_KEY = 'squadre-mvpvotes-v1';
+const MVP_VOTED_KEY = 'squadre-mvp-voted-v1';
+let mvpChoice = null;
+let mvpUnsubscribe = null;
+let mvpVoted = (() => { try { return JSON.parse(localStorage.getItem(MVP_VOTED_KEY) || '{}'); } catch (e) { return {}; } })();
+function saveMvpVoted() { try { localStorage.setItem(MVP_VOTED_KEY, JSON.stringify(mvpVoted)); } catch (e) {} }
+function loadLocalMvp() { try { return JSON.parse(localStorage.getItem(LOCAL_MVP_KEY) || '{}'); } catch (e) { return {}; } }
+function saveLocalMvp(o) { try { localStorage.setItem(LOCAL_MVP_KEY, JSON.stringify(o)); } catch (e) {} }
+function mvpTeamNames(m) { return { A: m.teamNames ? m.teamNames.A : 'Squadra A', B: m.teamNames ? m.teamNames.B : 'Squadra B' }; }
+function mvpInit() {
+  const sel = document.getElementById('mvp-self-select');
+  if (!sel) return;
+  const m = currentVoteMatch();
+  mvpChoice = null;
+  if (!m) {
+    sel.innerHTML = '';
+    document.getElementById('mvp-choices').innerHTML = '';
+    mvpSubscribe(null);
+    return;
+  }
+  const n = mvpTeamNames(m);
+  const opts = list => (list || []).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+  sel.innerHTML = `<optgroup label="${escapeHtml(n.A)}">${opts(m.teamA)}</optgroup><optgroup label="${escapeHtml(n.B)}">${opts(m.teamB)}</optgroup>`;
+  const v = mvpVoted[m.id];
+  if (v) { sel.value = v.voterId; mvpChoice = v.mvpId; }
+  mvpRenderChoices();
+  mvpSubscribe(m.id);
+}
+function mvpRenderChoices() {
+  const m = currentVoteMatch();
+  const box = document.getElementById('mvp-choices');
+  const sel = document.getElementById('mvp-self-select');
+  const btn = document.getElementById('mvp-submit-btn');
+  const lock = document.getElementById('mvp-lock-note');
+  if (!box || !sel || !btn || !lock) return;
+  if (!m) { box.innerHTML = ''; return; }
+  const v = mvpVoted[m.id];
+  const selfId = sel.value;
+  if (mvpChoice === selfId) mvpChoice = null;
+  const n = mvpTeamNames(m);
+  box.innerHTML = [['A', m.teamA], ['B', m.teamB]].map(([k, list]) => `
+    <div class="mvp-team">${escapeHtml(n[k])}</div>
+    <div class="mvp-grid">${(list || []).filter(p => p.id !== selfId).map(p =>
+      `<button type="button" class="mvp-opt${mvpChoice === p.id ? ' picked' : ''}" aria-pressed="${mvpChoice === p.id}" ${v ? 'disabled' : ''} onclick="mvpPick('${p.id}')">${escapeHtml(p.name)}</button>`).join('')}</div>`).join('');
+  sel.disabled = !!v;
+  btn.disabled = !!v;
+  if (v) {
+    lock.style.display = 'block';
+    lock.textContent = `Hai già votato l'MVP per questa partita come ${v.voterName}. Grazie!`;
+  } else lock.style.display = 'none';
+}
+function mvpPick(id) {
+  const m = currentVoteMatch();
+  if (!m || mvpVoted[m.id]) return;
+  mvpChoice = (mvpChoice === id) ? null : id;
+  mvpRenderChoices();
+}
+async function submitMvpVote() {
+  const m = currentVoteMatch();
+  const sel = document.getElementById('mvp-self-select');
+  const note = document.getElementById('mvp-saved-note');
+  if (!m || !sel || !note || mvpVoted[m.id]) return;
+  const say = (msg, ok) => {
+    note.style.color = ok ? 'var(--accent)' : 'var(--danger)';
+    note.textContent = msg;
+    note.style.display = 'block';
+    setTimeout(() => { note.style.display = 'none'; }, 3500);
+  };
+  const voterId = sel.value;
+  if (!voterId) return;
+  if (!mvpChoice) { say('Tocca prima il giocatore che vuoi votare come MVP.', false); return; }
+  const voterName = (mvpPlayers(m).find(p => p.id === voterId) || {}).name || '—';
+  const payload = { matchId: m.id, voterId, voterName, mvpId: mvpChoice, updatedAt: new Date().toISOString() };
+  const key = m.id + '__' + voterId;
+  if (db) {
+    try { await db.collection('mvp-votes').doc(key).set(payload); }
+    catch (e) { say('Invio non riuscito, riprova.', false); return; }
+  } else {
+    const local = loadLocalMvp();
+    local[key] = payload;
+    saveLocalMvp(local);
+    mvpRenderResults(m.id, Object.values(local).filter(x => x.matchId === m.id));
+  }
+  mvpVoted[m.id] = { voterId, voterName, mvpId: mvpChoice, votedAt: payload.updatedAt };
+  saveMvpVoted();
+  mvpRenderChoices();
+  say(db ? 'MVP inviato, grazie!' : 'MVP salvato su questo dispositivo, grazie!', true);
+}
+function mvpPlayers(m) { return [...(m.teamA || []), ...(m.teamB || [])]; }
+function mvpSubscribe(matchId) {
+  if (mvpUnsubscribe) { mvpUnsubscribe(); mvpUnsubscribe = null; }
+  const box = document.getElementById('mvp-results');
+  if (!box) return;
+  if (!matchId) { box.innerHTML = ''; return; }
+  if (!db) {
+    mvpRenderResults(matchId, Object.values(loadLocalMvp()).filter(x => x.matchId === matchId));
+    return;
+  }
+  box.innerHTML = '<p class="empty-note">In attesa dei voti…</p>';
+  try {
+    mvpUnsubscribe = db.collection('mvp-votes').where('matchId', '==', matchId).onSnapshot(
+      snap => mvpRenderResults(matchId, snap.docs.map(d => d.data())),
+      () => { box.innerHTML = '<p class="empty-note">Impossibile leggere i voti MVP in questo momento.</p>'; }
+    );
+  } catch (e) {
+    box.innerHTML = '<p class="empty-note">Impossibile leggere i voti MVP in questo momento.</p>';
+  }
+}
+function mvpCounts(m, docs) {
+  const counts = {};
+  mvpPlayers(m).forEach(p => { counts[p.id] = 0; });
+  docs.forEach(d => { if (d && d.mvpId in counts) counts[d.mvpId]++; });
+  return counts;
+}
+function mvpRenderResults(matchId, docs) {
+  const box = document.getElementById('mvp-results');
+  const m = matches.find(x => x.id === matchId);
+  if (!box || !m) return;
+  const counts = mvpCounts(m, docs);
+  const rows = mvpPlayers(m).map(p => ({ id: p.id, name: p.name, c: counts[p.id] }))
+    .filter(r => r.c > 0).sort((a, b) => b.c - a.c);
+  if (rows.length === 0) { box.innerHTML = '<p class="empty-note">Nessun voto MVP ancora: sii il primo!</p>'; return; }
+  const max = rows[0].c;
+  const total = rows.reduce((t, r) => t + r.c, 0);
+  const admin = !isVoteOnlyMode;
+  box.innerHTML = `
+    <div class="macro-title">Risultati MVP — ${total} ${total === 1 ? 'voto' : 'voti'}</div>
+    ${rows.map(r => `
+      <div class="mvp-bar${r.c === max ? ' top' : ''}">
+        <i style="width:${Math.round(r.c / max * 100)}%"></i>
+        <span>${r.c === max ? '🏆 ' : ''}${escapeHtml(r.name)}</span>
+        <span><strong>${r.c}</strong> <span style="color:var(--text-muted); font-size:11px;">(${Math.round(r.c / total * 100)}%)</span></span>
+      </div>`).join('')}
+    ${admin ? `<div class="row" style="margin-top:8px;"><button class="btn-ghost" onclick="mvpAssignWinner('${matchId}')">Assegna l'MVP al più votato</button></div>
+    <p class="hint" id="mvp-assign-note" style="display:none;"></p>` : ''}`;
+}
+async function mvpAssignWinner(matchId) {
+  if (isVoteOnlyMode) return;
+  const m = matches.find(x => x.id === matchId);
+  const note = document.getElementById('mvp-assign-note');
+  if (!m || !note) return;
+  const say = (msg, ok) => { note.style.display = 'block'; note.style.color = ok ? 'var(--accent)' : 'var(--danger)'; note.textContent = msg; };
+  let docs = [];
+  if (db) {
+    try { docs = (await db.collection('mvp-votes').where('matchId', '==', matchId).get()).docs.map(d => d.data()); } catch (e) {}
+  }
+  if (docs.length === 0) docs = Object.values(loadLocalMvp()).filter(x => x.matchId === matchId);
+  const counts = mvpCounts(m, docs);
+  const ranked = mvpPlayers(m).map(p => ({ p, c: counts[p.id] })).filter(r => r.c > 0).sort((a, b) => b.c - a.c);
+  if (ranked.length === 0) { say('Nessun voto MVP da assegnare.', false); return; }
+  const tied = ranked.filter(r => r.c === ranked[0].c);
+  if (tied.length > 1) { say(`Pareggio tra ${tied.map(r => r.p.name).join(' e ')}: scegli tu l'MVP dallo storico (Modifica).`, false); return; }
+  if (!matchHasResult(m)) { say('Prima registra gol e assist della partita dallo storico (Modifica), poi assegna l\'MVP.', false); return; }
+  const w = ranked[0].p;
+  const entries = m.entries || {};
+  mvpPlayers(m).forEach(p => {
+    const e = entries[p.id] || { goals: 0, assists: 0, og: 0 };
+    entries[p.id] = { goals: e.goals || 0, assists: e.assists || 0, og: e.og || 0, mvp: p.id === w.id };
+  });
+  m.entries = entries;
+  saveMatches();
+  renderHistory();
+  renderRankings();
+  say(`MVP assegnato a ${w.name} (${ranked[0].c} voti).`, true);
 }
 let overallPerfUnsubscribe = null;
 function computeOverallPerformance(voteDocs) {
