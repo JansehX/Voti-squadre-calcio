@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Squadre equilibrate</title>
+<meta name="theme-color" content="#0a1530">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Squadre">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -229,6 +237,23 @@ input[type=checkbox] { accent-color: var(--accent); width: 18px; height: 18px; }
 button.odd-tile { display: block; width: 100%; border: 0; border-radius: var(--radius-sm); padding: 14px 8px; background: var(--surface-2); font: inherit; font-weight: 500; color: inherit; cursor: pointer; text-align: center; transition: background .15s, box-shadow .15s, transform .1s; }
 button.odd-tile:hover { background: var(--accent-soft); }
 button.odd-tile.picked, button.odds-row.picked, .odd-mini.picked { background: var(--accent); color: var(--accent-contrast); box-shadow: 0 0 0 3px var(--pop); }
+.avatar { display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; letter-spacing: .02em; }
+button.pname { display: inline-flex; align-items: center; gap: 8px; background: none; border: 0; padding: 0; border-radius: 0; font: inherit; font-weight: 600; color: inherit; cursor: pointer; text-align: left; }
+button.pname:hover span.pn { color: var(--accent); text-decoration: underline; }
+.pmodal { position: fixed; inset: 0; z-index: 300; background: rgba(5,10,25,.62); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.pmodal[hidden] { display: none; }
+.pmodal-box { position: relative; background: var(--surface); color: var(--text); width: min(460px, 100%); max-height: 90vh; overflow-y: auto; border-radius: 22px; padding: 20px 18px 22px; box-shadow: 0 24px 70px rgba(0,0,0,.45); }
+button.pm-close { position: absolute; top: 10px; right: 10px; width: 36px; height: 36px; padding: 0; border-radius: 50%; background: var(--surface-2); color: var(--text); font-size: 16px; line-height: 1; }
+.pm-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; padding-right: 36px; }
+.pm-name { font-family: "Bricolage Grotesque", "DM Sans", sans-serif; font-size: 25px; font-weight: 800; margin: 0; line-height: 1.1; }
+.pm-role { font-size: 13px; color: var(--text-secondary); margin-top: 3px; }
+.pm-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+.pm-stat { background: var(--surface-2); border-radius: 12px; padding: 10px 6px; text-align: center; }
+.pm-stat b { display: block; font-size: 22px; font-weight: 800; }
+.pm-stat span { font-size: 11px; color: var(--text-secondary); }
+.pm-sec { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-secondary); margin: 16px 0 6px; }
+.pm-match { display: flex; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); margin-bottom: 5px; font-size: 13px; }
+.pm-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .mvp-poll { margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--border); }
 .mvp-team { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-secondary); margin: 14px 0 6px; }
 .mvp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
@@ -727,6 +752,7 @@ async function initSync() {
     console.error('Errore nella prima lettura dei dati sincronizzati:', e);
   }
   loadPostersFromDb();
+  loadAvatarsFromDb();
 }
 
 const ROLES = [
@@ -889,14 +915,14 @@ function renderRoster() {
     return `
       <details class="player" data-id="${p.id}" ${openIds.has(p.id) ? 'open' : ''}>
         <summary>
-          <span class="player-name">${escapeHtml(p.name)}</span>
+          <span class="player-name" style="display:inline-flex; align-items:center; gap:8px;">${avatarHtml(p.id, 28)}${escapeHtml(p.name)}</span>
           <span class="row" style="gap:12px;">
             <span style="font-size:11px; color:var(--text-muted);">${roleLabel(p.role || DEFAULT_ROLE)}</span>
             <span class="player-score">${score}</span>
             <button class="btn-danger-ghost" onclick="event.preventDefault(); event.stopPropagation(); removePlayer('${p.id}')">Rimuovi</button>
           </span>
         </summary>
-        <div class="player-body">${macroBlocks}</div>
+        <div class="player-body"><div style="margin-bottom:10px;"><button type="button" class="btn-ghost" style="padding:8px 14px; font-size:13px;" onclick="openPlayer('${p.id}')">Apri scheda giocatore</button></div>${macroBlocks}</div>
       </details>`;
   }).join('');
 }
@@ -1318,7 +1344,7 @@ function posterPopulate() {
 }
 function posterLoadImg(id) {
   return new Promise(resolve => {
-    const src = posterPhotos[id];
+    const src = posterPhotos[id] || safeImage(avatars[id]);
     if (!src) return resolve(null);
     if (posterImgCache[id] && posterImgCache[id].src === src) return resolve(posterImgCache[id].img);
     const img = new Image();
@@ -2192,7 +2218,7 @@ function renderRankings() {
   const scorersEl = document.getElementById('ranking-scorers');
   scorersEl.innerHTML = scorers.length ? scorers.map((s, i) => `
     <div class="team-card" style="cursor:default;">
-      <span>${i + 1}. ${escapeHtml(s.name)}</span>
+      <span>${i + 1}. ${pnameHtml(s.id, s.name)}</span>
       <span>${valueLabel(s)}</span>
     </div>`).join('') : '<p class="empty-note">Nessun dato ancora: salva una partita per iniziare.</p>';
 
@@ -2202,14 +2228,14 @@ function renderRankings() {
   const ogEl = document.getElementById('ranking-owngoals');
   if (ogEl) ogEl.innerHTML = ogList.length ? ogList.map((m, i) => `
     <div class="team-card" style="cursor:default;">
-      <span>${i + 1}. ${escapeHtml(m.name)}</span>
+      <span>${i + 1}. ${pnameHtml(m.id, m.name)}</span>
       <span>${m.og} autogol</span>
     </div>`).join('') : '<p class="empty-note">Nessun autogol registrato. Meglio così.</p>';
 
   const mvpEl = document.getElementById('ranking-mvp');
   mvpEl.innerHTML = mvpList.length ? mvpList.map((m, i) => `
     <div class="team-card" style="cursor:default;">
-      <span>${i + 1}. ${escapeHtml(m.name)}</span>
+      <span>${i + 1}. ${pnameHtml(m.id, m.name)}</span>
       <span>${m.mvp} MVP</span>
     </div>`).join('') : '<p class="empty-note">Nessun MVP assegnato ancora.</p>';
 }
@@ -2689,6 +2715,8 @@ async function clearAllVotesClick() {
   saveLocalVotes({});
   votedMatches = {};
   saveVotedMatches();
+  suggestionLog = suggestionLog.filter(l => !l.kind);
+  saveSuggestions();
   if (db) {
     try {
       const mc = db.collection('mvp-votes');
@@ -3032,6 +3060,223 @@ async function mvpAssignWinner(matchId) {
   renderRankings();
   say(`MVP assegnato a ${w.name} (${ranked[0].c} voti).`, true);
 }
+/* ---- Foto e scheda giocatore ---- */
+const AVATARS_KEY = 'squadre-avatars-v1';
+let avatars = (() => { try { return JSON.parse(localStorage.getItem(AVATARS_KEY) || '{}'); } catch (e) { return {}; } })();
+let playerModalId = null;
+function saveAvatarsLocal() { try { localStorage.setItem(AVATARS_KEY, JSON.stringify(avatars)); return true; } catch (e) { return false; } }
+function safeImage(src) { return (typeof src === 'string' && /^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(src)) ? src : null; }
+function avatarSrc(id) { return safeImage(avatars[id]) || (isVoteOnlyMode ? null : safeImage(posterPhotos[id])); }
+function avatarColor(id) { let h = 0; for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return `hsl(${h % 360} 55% 42%)`; }
+function playerNameOf(id) {
+  const r = roster.find(x => x.id === id);
+  if (r) return r.name;
+  for (const m of matches) { const f = [...(m.teamA || []), ...(m.teamB || [])].find(x => x.id === id); if (f) return f.name; }
+  return '—';
+}
+function avatarHtml(id, size) {
+  const src = avatarSrc(id);
+  const st = `width:${size}px;height:${size}px;border-radius:50%;flex:none;`;
+  if (src) return `<img class="avatar" alt="" src="${src}" style="${st}object-fit:cover;">`;
+  const ini = escapeHtml(playerNameOf(id).trim().slice(0, 2).toUpperCase());
+  return `<span class="avatar" style="${st}background:${avatarColor(id)};font-size:${Math.round(size * 0.4)}px;">${ini}</span>`;
+}
+function pnameHtml(id, name) {
+  return `<button type="button" class="pname" onclick="openPlayer('${id}')">${avatarHtml(id, 26)}<span class="pn">${escapeHtml(name)}</span></button>`;
+}
+async function loadAvatarsFromDb() {
+  if (!db) return;
+  try {
+    const snap = await db.collection('avatars').get();
+    let changed = false;
+    const seen = new Set();
+    snap.docs.forEach(d => {
+      const data = d.data() || {};
+      const id = data.playerId || d.id;
+      const img = safeImage(data.image);
+      if (!img) return;
+      seen.add(id);
+      if (avatars[id] !== img) { avatars[id] = img; changed = true; }
+    });
+    if (isVoteOnlyMode) Object.keys(avatars).forEach(id => { if (!seen.has(id)) { delete avatars[id]; changed = true; } });
+    if (changed) {
+      saveAvatarsLocal();
+      renderRankings();
+      subscribeOverallPerformance();
+      if (playerModalId) openPlayer(playerModalId);
+    }
+  } catch (e) { console.error('Errore leggendo le foto dei giocatori:', e); }
+}
+function avatarUpload(id, input) {
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!id || !file || isVoteOnlyMode) return;
+  const say = msg => { const el = document.getElementById('pm-note'); if (el) { el.textContent = msg; el.style.display = 'block'; } };
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = async () => {
+      const S = 220, c = document.createElement('canvas');
+      c.width = S; c.height = S;
+      const sc = Math.max(S / img.width, S / img.height);
+      const w = img.width * sc, h = img.height * sc;
+      c.getContext('2d').drawImage(img, (S - w) / 2, (S - h) * 0.25, w, h);
+      const url = c.toDataURL('image/jpeg', 0.8);
+      avatars[id] = url;
+      const okLocal = saveAvatarsLocal();
+      let okDb = !db;
+      if (db) {
+        try { await db.collection('avatars').doc(id).set({ playerId: id, image: url, updatedAt: new Date().toISOString() }); okDb = true; }
+        catch (e) { console.error('Errore salvando la foto online:', e); }
+      }
+      renderRankings();
+      subscribeOverallPerformance();
+      renderRoster();
+      openPlayer(id);
+      if (!okDb) say('Foto salvata solo su questo dispositivo: online non è passata (controlla le regole di Firestore per "avatars").');
+      else if (!okLocal) say('Spazio del browser pieno: la foto non è stata salvata qui.');
+      else say('Foto salvata.');
+    };
+    img.onerror = () => say('Non riesco a leggere questa immagine. Prova con un altro file.');
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+async function avatarRemove(id) {
+  if (isVoteOnlyMode || !avatars[id]) return;
+  delete avatars[id];
+  saveAvatarsLocal();
+  if (db) { try { await db.collection('avatars').doc(id).delete(); } catch (e) { console.error(e); } }
+  renderRankings();
+  subscribeOverallPerformance();
+  renderRoster();
+  openPlayer(id);
+}
+function pmScore(m) {
+  const sum = (list, f) => (list || []).reduce((t, p) => t + ((((m.entries || {})[p.id]) || {})[f] || 0), 0);
+  return { a: sum(m.teamA, 'goals') + sum(m.teamB, 'og'), b: sum(m.teamB, 'goals') + sum(m.teamA, 'og') };
+}
+function playerStatsFor(id) {
+  const sorted = matches.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+  const st = { games: 0, goals: 0, assists: 0, og: 0, mvp: 0, w: 0, d: 0, l: 0, res: 0, played: [] };
+  sorted.forEach(m => {
+    const inA = (m.teamA || []).some(p => p.id === id);
+    const inB = (m.teamB || []).some(p => p.id === id);
+    if (!inA && !inB) return;
+    const e = (m.entries || {})[id] || {};
+    const sc = pmScore(m), has = matchHasResult(m);
+    st.games++;
+    st.goals += e.goals || 0; st.assists += e.assists || 0; st.og += e.og || 0;
+    if (e.mvp) st.mvp++;
+    if (has) {
+      st.res++;
+      const mine = inA ? sc.a : sc.b, opp = inA ? sc.b : sc.a;
+      if (mine > opp) st.w++; else if (mine < opp) st.l++; else st.d++;
+    }
+    st.played.push({ m, side: inA ? 'A' : 'B', e, sc, has });
+  });
+  return st;
+}
+function sparkSvg(series, groupMean) {
+  if (series.length < 2) return '';
+  const W = 300, H = 90, padX = 14, padY = 12;
+  const y = v => padY + (1 - v / 10) * (H - 2 * padY);
+  const x = i => padX + i * (W - 2 * padX) / (series.length - 1);
+  const pts = series.map((d, i) => `${x(i).toFixed(1)},${y(d.avg).toFixed(1)}`).join(' ');
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Andamento dei voti partita per partita">
+    <line x1="${padX}" x2="${W - padX}" y1="${y(groupMean).toFixed(1)}" y2="${y(groupMean).toFixed(1)}" style="stroke:var(--text-muted)" stroke-width="1" stroke-dasharray="4 4"/>
+    <polyline points="${pts}" fill="none" style="stroke:var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    ${series.map((d, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(d.avg).toFixed(1)}" r="4" style="fill:var(--accent)"/><text x="${x(i).toFixed(1)}" y="${(y(d.avg) - 8).toFixed(1)}" text-anchor="middle" font-size="10" style="fill:var(--text-secondary)">${d.avg.toFixed(1)}</text>`).join('')}
+  </svg>`;
+}
+function openPlayer(id) {
+  const modal = document.getElementById('player-modal');
+  const box = document.getElementById('player-modal-box');
+  if (!modal || !box) return;
+  playerModalId = id;
+  const r = roster.find(x => x.id === id);
+  const st = playerStatsFor(id);
+  const gpm = st.games ? (st.goals / st.games).toFixed(2) : '—';
+  const admin = !isVoteOnlyMode;
+  const chips = pm => [pm.e.goals ? `${pm.e.goals}G` : '', pm.e.assists ? `${pm.e.assists}A` : '', pm.e.og ? `${pm.e.og} aut.` : '', pm.e.mvp ? 'MVP' : ''].filter(Boolean).join(' · ');
+  const last = st.played.slice().reverse().slice(0, 5);
+  box.innerHTML = `
+    <button type="button" class="pm-close" onclick="closePlayer()" aria-label="Chiudi">✕</button>
+    <div class="pm-head">
+      ${avatarHtml(id, 84)}
+      <div>
+        <h3 class="pm-name">${escapeHtml(playerNameOf(id))}</h3>
+        <div class="pm-role">${r ? escapeHtml(roleLabel(r.role || DEFAULT_ROLE)) : 'Non più in rosa'}${admin && r ? ` · punteggio tecnico <strong>${totalScore(r).toFixed(2)}</strong>` : ''}</div>
+      </div>
+    </div>
+    ${admin ? `<div class="pm-actions">
+      <label class="btn-ghost" style="display:inline-block; padding:9px 16px; border-radius:999px; font-weight:700; font-size:13px; cursor:pointer;">${avatars[id] ? 'Cambia foto' : 'Carica foto'}
+        <input type="file" accept="image/*" style="display:none;" onchange="avatarUpload('${id}', this)"></label>
+      ${avatars[id] ? `<button type="button" class="btn-danger-ghost" onclick="avatarRemove('${id}')">Rimuovi foto</button>` : ''}
+    </div>
+    <p class="hint" id="pm-note" style="display:none; margin-top:6px;"></p>` : ''}
+    <div class="pm-sec">Numeri</div>
+    <div class="pm-grid">
+      <div class="pm-stat"><b>${st.games}</b><span>Partite</span></div>
+      <div class="pm-stat"><b>${st.goals}</b><span>Gol</span></div>
+      <div class="pm-stat"><b>${st.assists}</b><span>Assist</span></div>
+      <div class="pm-stat"><b>${st.mvp}</b><span>MVP</span></div>
+      <div class="pm-stat"><b>${st.og}</b><span>Autogol</span></div>
+      <div class="pm-stat"><b>${gpm}</b><span>Gol / partita</span></div>
+    </div>
+    <div class="pm-match"><span>Risultati di squadra</span><span><strong>${st.w}</strong> V · <strong>${st.d}</strong> N · <strong>${st.l}</strong> P${st.res ? ` · ${Math.round(st.w / st.res * 100)}% vittorie` : ''}</span></div>
+    <div id="pm-perf"><div class="pm-sec">Prestazione</div><p class="empty-note">Caricamento voti…</p></div>
+    <div class="pm-sec">Ultime partite</div>
+    ${last.length ? last.map(pm => {
+      const nm = pm.m.teamNames || { A: 'Squadra A', B: 'Squadra B' };
+      const d = new Date(pm.m.date).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' });
+      const mine = pm.side === 'A' ? pm.sc.a : pm.sc.b, opp = pm.side === 'A' ? pm.sc.b : pm.sc.a;
+      return `<div class="pm-match"><span>${d} · ${escapeHtml(nm[pm.side])}</span><span>${pm.has ? `<strong>${mine}-${opp}</strong>` : 'n.d.'}${chips(pm) ? ' · ' + chips(pm) : ''}</span></div>`;
+    }).join('') : '<p class="empty-note">Nessuna partita giocata ancora.</p>'}`;
+  modal.hidden = false;
+  playerPerfInto(id);
+}
+function closePlayer() {
+  const modal = document.getElementById('player-modal');
+  if (modal) modal.hidden = true;
+  playerModalId = null;
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && playerModalId) closePlayer(); });
+async function playerPerfInto(id) {
+  let docs = [], mvpDocs = [];
+  if (db) {
+    try { docs = (await db.collection('perf-votes').get()).docs.map(d => d.data()); } catch (e) {}
+    try { mvpDocs = (await db.collection('mvp-votes').get()).docs.map(d => d.data()); } catch (e) {}
+  }
+  if (docs.length === 0) docs = Object.values(loadLocalVotes());
+  if (mvpDocs.length === 0) mvpDocs = Object.values(loadLocalMvp());
+  const box = document.getElementById('pm-perf');
+  if (!box || playerModalId !== id) return;
+  const stats = weightedAverages(computeOverallPerformance(docs))[id];
+  const perMatch = {};
+  docs.forEach(d => {
+    const v = (d.ratings || {})[id];
+    if (typeof v !== 'number') return;
+    (perMatch[d.matchId] = perMatch[d.matchId] || { sum: 0, count: 0 });
+    perMatch[d.matchId].sum += v; perMatch[d.matchId].count++;
+  });
+  const series = matches.slice().sort((a, b) => new Date(a.date) - new Date(b.date))
+    .filter(m => perMatch[m.id]).map(m => ({ avg: perMatch[m.id].sum / perMatch[m.id].count }));
+  const mvpVotes = mvpDocs.filter(d => d.mvpId === id).length;
+  const polls = new Set(mvpDocs.filter(d => d.mvpId === id).map(d => d.matchId)).size;
+  box.innerHTML = `
+    <div class="pm-sec">Prestazione</div>
+    ${stats ? `
+      <div class="pm-grid">
+        <div class="pm-stat"><b>${stats.weighted.toFixed(2)}</b><span>Media pesata</span></div>
+        <div class="pm-stat"><b>${stats.raw.toFixed(2)}</b><span>Media grezza</span></div>
+        <div class="pm-stat"><b>${stats.count}</b><span>Voti ricevuti</span></div>
+      </div>
+      ${stats.count < PROVISIONAL_BELOW ? '<p class="hint">Media provvisoria: pochi voti ricevuti finora.</p>' : ''}
+      ${series.length >= 2 ? `<div class="pm-sec">Andamento partita per partita</div>${sparkSvg(series, stats.groupMean)}<p class="hint">La linea tratteggiata è la media del gruppo (${stats.groupMean.toFixed(2)}).</p>` : ''}`
+    : '<p class="empty-note">Nessun voto di prestazione ancora.</p>'}
+    <div class="pm-match" style="margin-top:8px;"><span>Voti MVP nei sondaggi</span><span><strong>${mvpVotes}</strong>${polls ? ` · in ${polls} ${polls === 1 ? 'partita' : 'partite'}` : ''}</span></div>`;
+}
 let overallPerfUnsubscribe = null;
 function computeOverallPerformance(voteDocs) {
   const totals = {};
@@ -3071,7 +3316,7 @@ function renderOverallPerformance(totals) {
   const rows = roster.map(p => {
     const s = stats[p.id];
     if (!s) return null;
-    return { name: p.name, ...s };
+    return { id: p.id, name: p.name, ...s };
   }).filter(Boolean).sort((a, b) => b.weighted - a.weighted);
   if (rows.length === 0) {
     container.innerHTML = '<p class="empty-note">Nessun voto ancora.</p>';
@@ -3080,7 +3325,7 @@ function renderOverallPerformance(totals) {
   const groupMean = rows[0].groupMean;
   container.innerHTML = rows.map((r, i) => `
     <div class="team-card" style="cursor:default;">
-      <span>${i + 1}. ${escapeHtml(r.name)}${r.count < PROVISIONAL_BELOW ? ' <span style="font-size:10px; color:var(--gold); border:1px solid var(--gold); border-radius:4px; padding:1px 4px; margin-left:4px;">provvisoria</span>' : ''}</span>
+      <span>${i + 1}. ${pnameHtml(r.id, r.name)}${r.count < PROVISIONAL_BELOW ? ' <span style="font-size:10px; color:var(--gold); border:1px solid var(--gold); border-radius:4px; padding:1px 4px; margin-left:4px;">provvisoria</span>' : ''}</span>
       <span><strong>${r.weighted.toFixed(2)}</strong> <span style="color:var(--text-muted); font-size:11px;">(grezza ${r.raw.toFixed(2)} · ${r.count} ${r.count === 1 ? 'voto' : 'voti'})</span></span>
     </div>`).join('') + `
     <p class="hint" style="margin-top:8px;">Media del gruppo: ${groupMean.toFixed(2)}. Il valore in grassetto è corretto in base a quanti voti ha ricevuto ciascuno: con pochi voti si avvicina alla media del gruppo, con tanti voti coincide con la media vera.</p>`;
@@ -3135,7 +3380,7 @@ async function generateStreakSuggestions() {
   let created = 0;
   roster.forEach(p => {
     if (suggestions.some(x => x.playerId === p.id && x.sourceMatchId === 'streak')) return;
-    const consumed = new Set(suggestionLog.filter(l => l.playerId === p.id).flatMap(l => l.matchIds));
+    const consumed = new Set(suggestionLog.filter(l => l.playerId === p.id && Array.isArray(l.matchIds)).flatMap(l => l.matchIds));
     const rated = sortedMatches
       .filter(m => [...(m.teamA || []), ...(m.teamB || [])].some(x => x.id === p.id))
       .map(m => ({ m, st: perMatch[m.id + '|' + p.id] }))
@@ -3169,6 +3414,7 @@ async function generateStreakSuggestions() {
   }
 }
 
+const OVERALL_MIN_NEW_VOTES = 3; // voti nuovi minimi per giocatore prima di riproporre un suggerimento generale
 async function generateSuggestionsFromOverallVotes() {
   const note = document.getElementById('overall-suggest-note');
   let voteDocs = [];
@@ -3182,21 +3428,32 @@ async function generateSuggestionsFromOverallVotes() {
     const local = loadLocalVotes();
     voteDocs = Object.values(local);
   }
-  const stats = weightedAverages(computeOverallPerformance(voteDocs));
-  let created = 0;
+  const totals = computeOverallPerformance(voteDocs);
+  let sumAll = 0, cntAll = 0;
+  Object.values(totals).forEach(t => { sumAll += t.sum; cntAll += t.count; });
+  const groupMean = cntAll ? sumAll / cntAll : 6;
+  let created = 0, waiting = 0;
   roster.forEach(p => {
-    const s = stats[p.id];
-    if (!s) return;
-    const already = suggestions.some(x => x.sourceMatchId === 'overall' && x.subId === 'ALL' && x.playerId === p.id);
-    if (already) return;
-    let adjustment = (s.weighted - 6) * 0.15;
+    const t = totals[p.id];
+    if (!t) return;
+    if (suggestions.some(x => x.sourceMatchId === 'overall' && x.subId === 'ALL' && x.playerId === p.id)) return;
+    // voti già considerati in un suggerimento precedente (applicato o ignorato): si guardano solo i nuovi
+    const prev = suggestionLog.filter(l => l.kind === 'overall' && l.playerId === p.id).slice(-1)[0];
+    const base = (prev && prev.count <= t.count) ? prev : { sum: 0, count: 0 };
+    const dCount = t.count - base.count;
+    const dSum = t.sum - base.sum;
+    if (dCount < OVERALL_MIN_NEW_VOTES) { if (dCount > 0) waiting++; return; }
+    const weighted = (PRIOR_WEIGHT * groupMean + dSum) / (PRIOR_WEIGHT + dCount);
+    let adjustment = (weighted - groupMean) * 0.15;
     adjustment = Math.max(-0.5, Math.min(0.5, +adjustment.toFixed(2)));
+    suggestionLog = suggestionLog.filter(l => !(l.kind === 'overall' && l.playerId === p.id));
+    suggestionLog.push({ kind: 'overall', playerId: p.id, sum: t.sum, count: t.count, at: new Date().toISOString() });
     if (Math.abs(adjustment) < 0.05) return;
     suggestions.push({
       id: 'sgo' + Date.now() + Math.random().toString(16).slice(2),
       playerId: p.id, subId: 'ALL', label: 'Tutte le categorie',
       adjustment,
-      reason: `media pesata ${s.weighted.toFixed(2)} (grezza ${s.raw.toFixed(2)}, ${s.count} ${s.count === 1 ? 'voto' : 'voti'}${s.count < PROVISIONAL_BELOW ? ', provvisoria' : ''})`,
+      reason: `${dCount} ${dCount === 1 ? 'nuovo voto' : 'nuovi voti'}: media ${(dSum / dCount).toFixed(2)}, pesata ${weighted.toFixed(2)}, contro ${groupMean.toFixed(2)} del gruppo${dCount < PROVISIONAL_BELOW ? ' (provvisoria)' : ''}`,
       sourceMatchId: 'overall'
     });
     created++;
@@ -3208,8 +3465,10 @@ async function generateSuggestionsFromOverallVotes() {
     note.style.color = 'var(--accent)';
     note.textContent = created > 0
       ? `${created} suggerimento/i aggiunto/i qui sotto.`
-      : 'Nessun nuovo suggerimento: medie nella norma o già proposte in precedenza.';
-    setTimeout(() => { note.style.display = 'none'; }, 4000);
+      : (waiting > 0
+        ? `Nessun nuovo suggerimento: per ogni giocatore servono almeno ${OVERALL_MIN_NEW_VOTES} voti nuovi dall'ultima volta.`
+        : 'Nessun nuovo suggerimento: medie nella norma o già proposte in precedenza.');
+    setTimeout(() => { note.style.display = 'none'; }, 5000);
   }
 }
 function renderVoteResults(matchId, voteDocs) {
@@ -3280,12 +3539,14 @@ function generateSuggestionsFromVotes(matchId) {
     allPlayers.forEach(p => {
       const s = stats[p.id];
       if (!s) return;
-      const already = suggestions.some(x => x.sourceMatchId === matchId && x.subId === 'ALL' && x.playerId === p.id);
+      const already = suggestions.some(x => x.sourceMatchId === matchId && x.subId === 'ALL' && x.playerId === p.id)
+        || suggestionLog.some(l => l.kind === 'match' && l.matchId === matchId && l.playerId === p.id);
       if (already) return;
       const rp = roster.find(pl => pl.id === p.id);
       if (!rp) return;
-      let adjustment = (s.weighted - 6) * 0.15;
+      let adjustment = (s.weighted - s.groupMean) * 0.15;
       adjustment = Math.max(-0.5, Math.min(0.5, +adjustment.toFixed(2)));
+      suggestionLog.push({ kind: 'match', matchId, playerId: p.id, at: new Date().toISOString() });
       if (Math.abs(adjustment) < 0.05) return;
       suggestions.push({
         id: 'sgv' + Date.now() + Math.random().toString(16).slice(2),
@@ -3401,6 +3662,11 @@ function updateVoteModeNote() {
   }
 }
 
+try {
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+} catch (e) {}
 applyVoteOnlyMode();
 initMatchDate();
 renderAll();
@@ -3414,5 +3680,8 @@ initSync().finally(() => {
 });
 </script>
 <div id="slip-print" aria-hidden="true"></div>
+<div id="player-modal" class="pmodal" hidden onclick="if (event.target === this) closePlayer()">
+  <div class="pmodal-box" role="dialog" aria-modal="true" aria-label="Scheda giocatore" id="player-modal-box"></div>
+</div>
 </body>
 </html>
