@@ -2748,8 +2748,13 @@ function saveLocalVotes(obj) {
   try { localStorage.setItem(LOCAL_VOTES_KEY, JSON.stringify(obj)); } catch (e) {}
 }
 
+function isRealSite() { return /^https?:$/.test(location.protocol) && (/github\.io$/.test(location.hostname) || location.hostname === 'localhost'); }
+function voteLinkUrl() {
+  if (isRealSite()) return location.origin + location.pathname.replace(/[^\/]*$/, '') + 'vota.html';
+  return location.origin + location.pathname + '#vota=1';
+}
 function copyVoteLink() {
-  const url = window.location.origin + window.location.pathname + '#vota=1';
+  const url = voteLinkUrl();
   const finish = () => {
     const el = document.getElementById('vote-link-copied');
     el.style.display = 'inline';
@@ -3667,6 +3672,13 @@ function updateVoteModeNote() {
 try {
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+} catch (e) {}
+// Vecchi link "index.html#vota=1": portano alla pagina degli amici, così "Aggiungi alla Home" salva quella giusta.
+try {
+  const file = location.pathname.split('/').pop();
+  if (isRealSite() && file !== 'vota.html' && location.hash.replace('#', '') === 'vota=1') {
+    location.replace(location.pathname.replace(/[^\/]*$/, '') + 'vota.html');
   }
 } catch (e) {}
 applyVoteOnlyMode();
