@@ -1756,7 +1756,7 @@ function renderHistory() {
       </div>`;
     }).join('') : '<p class="empty-note" style="padding:2px 0;">Nessun giocatore registrato.</p>';
     return `
-      <details class="player" data-id="${m.id}" ${historyOpenId === m.id ? 'open' : ''}>
+      <details class="player" data-id="${m.id}">
         <summary>
           <span class="player-name">${dateStr}</span>
           <span class="row" style="gap:10px;">
