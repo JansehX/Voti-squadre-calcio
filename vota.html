@@ -206,37 +206,10 @@ input[type=checkbox] { accent-color: var(--accent); width: 18px; height: 18px; }
 .edit-panel button { padding: 9px 16px; font-size: 13.5px; }
 .edit-add { background: var(--surface-2); }
 .edit-panel .btn-ghost { background: var(--surface); }
-.poster-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
-.poster-controls { display: flex; flex-direction: column; gap: 14px; }
-.poster-side label { display: block; margin-bottom: 6px; }
-.file-btn { display: inline-block; cursor: pointer; padding: 11px 20px; border-radius: 999px; font-weight: 700; font-size: 14px; margin: 0; color: var(--text); }
-.poster-preview canvas { width: 100%; height: auto; border-radius: 16px; box-shadow: var(--shadow); display: block; background: var(--surface-2); }
-@media (max-width: 760px) { .poster-grid { grid-template-columns: 1fr; } .poster-preview { order: -1; } }
-.match-poster { display: block; width: 100%; max-width: 340px; height: auto; border-radius: 14px; box-shadow: var(--shadow); cursor: zoom-in; margin: 4px auto 14px; }
-.poster-thumb { width: 30px; height: 38px; object-fit: cover; border-radius: 6px; box-shadow: 0 0 0 2px var(--surface); }
-.lightbox { position: fixed; inset: 0; z-index: 200; background: rgba(5,8,18,.88); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 20px; }
-.lightbox img { max-width: min(92vw, 560px); max-height: 78vh; border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
-.lightbox .row { gap: 10px; }
-.odds-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.odds-grid.two { grid-template-columns: repeat(2, 1fr); }
-.odd-tile { background: var(--surface-2); border-radius: var(--radius-sm); padding: 14px 8px; text-align: center; }
-.odd-tile.fav { box-shadow: inset 0 0 0 2px var(--pop); }
-.odd-key { font-size: 12.5px; color: var(--text-secondary); font-weight: 600; margin-bottom: 4px; overflow-wrap: anywhere; }
-.odd-val { font-family: 'Bricolage Grotesque','DM Sans',sans-serif; font-weight: 800; font-size: 28px; color: var(--accent); line-height: 1.1; }
-.odd-pct { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-.odds-market-title { font-weight: 700; font-size: 14.5px; margin: 20px 0 8px; }
-.odds-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-radius: 12px; background: var(--surface-2); margin-bottom: 6px; font-size: 14px; }
-.odds-row .odd-val { font-size: 20px; }
-.odds-row .pct { color: var(--text-muted); font-size: 12px; margin-right: 12px; }
-.odds-head { display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap; font-family: 'Bricolage Grotesque','DM Sans',sans-serif; font-weight: 800; font-size: 20px; margin-bottom: 14px; }
-@media (max-width: 480px) { .odd-val { font-size: 24px; } }
 .video-frame { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: #000; box-shadow: var(--shadow); }
 .video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .video-play { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; font-size: 16px; color: #fff; background: linear-gradient(135deg, var(--hero-a), var(--hero-b)); box-shadow: var(--shadow); }
 .video-play span { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 50%; background: var(--pop); color: var(--pop-ink); font-size: 22px; padding-left: 4px; }
-button.odd-tile { display: block; width: 100%; border: 0; border-radius: var(--radius-sm); padding: 14px 8px; background: var(--surface-2); font: inherit; font-weight: 500; color: inherit; cursor: pointer; text-align: center; transition: background .15s, box-shadow .15s, transform .1s; }
-button.odd-tile:hover { background: var(--accent-soft); }
-button.odd-tile.picked, button.odds-row.picked, .odd-mini.picked { background: var(--accent); color: var(--accent-contrast); box-shadow: 0 0 0 3px var(--pop); }
 .avatar { display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; letter-spacing: .02em; }
 button.pname { display: inline-flex; align-items: center; gap: 8px; background: none; border: 0; padding: 0; border-radius: 0; font: inherit; font-weight: 600; color: inherit; cursor: pointer; text-align: left; }
 button.pname:hover span.pn { color: var(--accent); text-decoration: underline; }
@@ -266,42 +239,35 @@ button.mvp-opt.picked:disabled { opacity: 1; }
 .mvp-bar > i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent-soft); z-index: 0; }
 .mvp-bar > span { position: relative; z-index: 1; }
 .mvp-bar.top { box-shadow: inset 0 0 0 2px var(--pop); }
-button.odd-tile.picked .odd-val, button.odd-tile.picked .odd-key, button.odd-tile.picked .odd-pct,
-button.odds-row.picked .odd-val, button.odds-row.picked .pct, .odd-mini.picked .odd-val, .odd-mini.picked .pct { color: var(--accent-contrast); }
-.odd-tile .odd-key, .odd-tile .odd-val, .odd-tile .odd-pct { display: block; }
-button.odds-row { display: flex; width: 100%; border: 0; border-radius: 12px; padding: 10px 14px; background: var(--surface-2); font: inherit; font-weight: 500; color: inherit; cursor: pointer; text-align: left; }
-button.odds-row:hover { background: var(--accent-soft); }
-.odds-row-static { cursor: default; }
-.odd-pair { display: flex; gap: 8px; }
-.odd-mini { border: 0; border-radius: 10px; background: var(--surface); padding: 6px 12px; font: inherit; font-weight: 500; color: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
-.odd-mini:hover { background: var(--accent-soft); }
-.odd-mini .odd-val { font-size: 19px; }
-#odds-slip { position: sticky; bottom: 12px; z-index: 20; margin-top: 18px; }
-.slip { background: var(--nav-bg); color: #fff; border-radius: 18px; padding: 14px 16px; box-shadow: 0 12px 34px -8px rgba(0,0,0,.5); }
-.slip[open] { max-height: 62vh; overflow-y: auto; }
-.slip summary { cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 12px; list-style: none; font-weight: 700; font-size: 15px; }
-.slip summary::-webkit-details-marker { display: none; }
-.slip .slip-total { color: var(--pop); font-family: 'Bricolage Grotesque','DM Sans',sans-serif; font-weight: 800; font-size: 22px; }
-.slip-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid rgba(255,255,255,.12); font-size: 14px; }
-.slip-item small { display: block; color: rgba(255,255,255,.62); font-size: 12px; }
-.slip-item button { background: transparent; color: rgba(255,255,255,.7); padding: 4px 8px; font-size: 18px; line-height: 1; }
-.slip-item .o { color: var(--pop); font-weight: 800; white-space: nowrap; }
-.slip-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-.slip-actions .btn-primary { background: var(--pop); color: var(--pop-ink); }
-.slip-actions .btn-ghost { background: rgba(255,255,255,.12); color: #fff; }
-.slip-empty { background: var(--surface-2); color: var(--text-muted); border-radius: 14px; padding: 12px 16px; font-size: 13.5px; text-align: center; }
-#slip-print { display: none; }
-@media print {
-  body.printing-slip .topbar, body.printing-slip .hero, body.printing-slip .wrap, body.printing-slip .site-footer { display: none !important; }
-  body.printing-slip { background: #fff !important; }
-  body.printing-slip #slip-print { display: block; color: #000; font-family: 'DM Sans', Arial, sans-serif; padding: 24px; max-width: 560px; margin: 0 auto; }
-  #slip-print h1 { font-size: 28px; margin: 0 0 4px; max-width: none; letter-spacing: 0; color: #000; }
-  #slip-print .sp-sub { font-size: 14px; margin: 0 0 14px; color: #333; }
-  #slip-print .sp-row { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; border-bottom: 1px dashed #888; font-size: 15px; }
-  #slip-print .sp-row small { display: block; color: #555; font-size: 12px; }
-  #slip-print .sp-total { display: flex; justify-content: space-between; font-size: 20px; font-weight: 800; padding: 12px 0; border-top: 3px solid #000; margin-top: 8px; }
-  #slip-print .sp-note { font-size: 12px; color: #555; margin-top: 10px; }
-}
+
+/* ---- Sezioni comprimibili ---- */
+section.card > h2 { cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
+section.card > h2::after { content: ''; margin-left: auto; flex: none; width: 9px; height: 9px; border-right: 2.5px solid var(--text-muted); border-bottom: 2.5px solid var(--text-muted); transform: translateY(-2px) rotate(45deg); transition: transform .2s; }
+section.card > h2:hover::after { border-color: var(--accent); }
+section.card > h2:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; border-radius: 8px; }
+section.card.collapsed > h2 { margin-bottom: 0; }
+section.card.collapsed > h2::after { transform: translateY(2px) rotate(-45deg); }
+section.card.collapsed > :not(h2) { display: none !important; }
+.sec-tools { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin: 0 0 12px; font-size: 13px; color: var(--text-secondary); }
+.sec-tools button { padding: 7px 14px; font-size: 13px; }
+
+#pm-card { margin: 14px 0 4px; text-align: center; }
+#pm-card img { width: min(100%, 300px); height: auto; border-radius: 22px; box-shadow: 0 14px 34px -10px rgba(0,0,0,.45); }
+#pm-card .pm-actions { justify-content: center; }
+
+/* ---- Simulatore ---- */
+.sim-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin: 10px 0 14px; }
+button.sim-chip { border-radius: 12px; padding: 10px 12px; background: var(--surface-2); color: var(--text); border: 2px solid transparent; font-weight: 600; font-size: 14px; display: flex; justify-content: space-between; align-items: center; gap: 8px; text-align: left; }
+button.sim-chip small { font-size: 11px; font-weight: 700; opacity: .75; }
+button.sim-chip[data-st="A"] { background: var(--sim-a); color: #fff; }
+button.sim-chip[data-st="B"] { background: var(--sim-b); color: #fff; }
+.sim-bar { display: flex; height: 38px; border-radius: 12px; overflow: hidden; margin: 10px 0 6px; font-weight: 800; font-size: 14px; color: #fff; }
+.sim-bar > div { display: flex; align-items: center; justify-content: center; min-width: 0; overflow: hidden; white-space: nowrap; }
+.sim-legend { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--text-secondary); gap: 8px; }
+.sim-row { display: flex; justify-content: space-between; gap: 10px; padding: 9px 12px; border-radius: 12px; background: var(--surface-2); margin-bottom: 6px; font-size: 14px; }
+.sim-swap { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); margin-bottom: 6px; font-size: 14px; flex-wrap: wrap; }
+.sim-swap button { padding: 7px 14px; font-size: 13px; }
+.sim-title { font-weight: 700; font-size: 14.5px; margin: 18px 0 8px; }
 </style>
 </head>
 <body>
@@ -414,54 +380,15 @@ button.odds-row:hover { background: var(--accent-soft); }
     <div id="pitch-container"></div>
   </section>
 
-  <section class="card" id="poster-section">
-    <h2><span class="step-num">★</span>Locandina della partita</h2>
-    <p class="hint">Crea l'immagine della sfida con le foto di due amici, i nomi e i colori delle squadre. Poi scaricala o condividila direttamente nel gruppo. Le foto restano solo su questo dispositivo.</p>
-    <div class="poster-grid">
-      <div class="poster-controls">
-        <div class="poster-side">
-          <label for="poster-a">Faccia della squadra A</label>
-          <select id="poster-a" onchange="posterManual=true; posterRefresh()"></select>
-          <div class="row" style="margin-top:8px;">
-            <label class="btn-ghost file-btn">Carica foto<input type="file" accept="image/*" hidden onchange="posterUpload('A', this)"></label>
-            <button class="btn-ghost" onclick="posterRemovePhoto('A')">Rimuovi foto</button>
-          </div>
-        </div>
-        <div class="poster-side">
-          <label for="poster-b">Faccia della squadra B</label>
-          <select id="poster-b" onchange="posterManual=true; posterRefresh()"></select>
-          <div class="row" style="margin-top:8px;">
-            <label class="btn-ghost file-btn">Carica foto<input type="file" accept="image/*" hidden onchange="posterUpload('B', this)"></label>
-            <button class="btn-ghost" onclick="posterRemovePhoto('B')">Rimuovi foto</button>
-          </div>
-        </div>
-        <div class="poster-side">
-          <label for="poster-title">Titolo</label>
-          <input type="text" id="poster-title" value="Partita di oggi" oninput="posterRefresh()">
-        </div>
-        <div class="poster-side">
-          <label>Risultato (lascia vuoto per mostrare VS)</label>
-          <div class="row">
-            <input type="number" id="poster-score-a" min="0" placeholder="A" oninput="posterRefresh()">
-            <span>–</span>
-            <input type="number" id="poster-score-b" min="0" placeholder="B" oninput="posterRefresh()">
-          </div>
-        </div>
-        <label class="check-row" style="padding-left:0;"><input type="checkbox" id="poster-lineups" checked onchange="posterRefresh()"> Mostra le formazioni</label>
-        <div class="poster-side">
-          <label for="poster-match">Partita a cui collegarla</label>
-          <select id="poster-match"></select>
-          <button class="btn-primary" id="poster-save-btn" style="margin-top:8px;" onclick="posterSaveToHistory()">Salva nello storico</button>
-          <p class="hint" id="poster-match-hint" style="margin:8px 0 0; display:none;">Salva prima la partita (sezione 4): poi potrai collegarci la locandina.</p>
-        </div>
-        <div class="row wrap-row" style="margin-top:6px;">
-          <button class="btn-ghost" onclick="posterShare()">Condividi</button>
-          <button class="btn-ghost" onclick="posterDownload()">Scarica immagine</button>
-        </div>
-        <p class="hint" id="poster-note" style="margin-top:10px; display:none;"></p>
-      </div>
-      <div class="poster-preview"><canvas id="poster-canvas" width="1080" height="1350" aria-label="Anteprima locandina"></canvas></div>
+  <section class="card" id="sim-section">
+    <h2><span class="step-num">S</span>Simulatore "e se?"</h2>
+    <p class="hint">Tocca i giocatori per metterli nella squadra A, nella B o lasciarli fuori (un tocco cambia stato: fuori → A → B → fuori). Il simulatore calcola le probabilità di vittoria e ti propone gli scambi che rendono la partita più equilibrata. Non cambia le squadre vere finché non premi "Applica".</p>
+    <div class="row wrap-row" style="gap:8px;">
+      <button class="btn-ghost" id="sim-use-btn" onclick="simFromCurrent()">Usa le squadre generate</button>
+      <button class="btn-ghost" onclick="simClear()">Svuota</button>
     </div>
+    <div class="sim-chips" id="sim-chips"></div>
+    <div id="sim-out"></div>
   </section>
 
   <section class="card" id="stats-section">
@@ -502,14 +429,6 @@ button.odds-row:hover { background: var(--accent-soft); }
         <div id="ranking-owngoals"></div>
       </div>
     </div>
-  </section>
-
-  <section class="card" id="odds-section">
-    <h2><span class="step-num">Q</span>Quotazioni della partita</h2>
-    <p class="hint">Solo per gioco: nessuna puntata e nessun denaro. Le quote si calcolano in base a forza delle squadre, gol e MVP delle partite passate. Più la quota è bassa, più l'esito è probabile.</p>
-    <select id="odds-match-select" onchange="renderOdds()" style="margin-bottom:14px;" aria-label="Partita"></select>
-    <div id="odds-content"></div>
-    <div id="odds-slip"></div>
   </section>
 
   <section class="card" id="performance-section">
@@ -723,7 +642,7 @@ function renderAll() {
   applyTeamMetaToHeaders();
   updateSaveButtonState();
   subscribeOverallPerformance();
-  posterRefresh();
+  renderSim();
 }
 async function initSync() {
   let dbCap = null;
@@ -751,7 +670,6 @@ async function initSync() {
   } catch (e) {
     console.error('Errore nella prima lettura dei dati sincronizzati:', e);
   }
-  loadPostersFromDb();
   loadAvatarsFromDb();
 }
 
@@ -1072,7 +990,9 @@ function buildTeams() {
   currentTeams = { teamA, teamB };
   swapSelection = null;
   renderTeams();
+  simFromCurrent(true);
   document.getElementById('result-section').style.display = 'block';
+  expandSection(document.getElementById('result-section'));
   document.getElementById('result-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -1147,7 +1067,6 @@ function renderTeams() {
   document.getElementById('diff-line').textContent = `Differenza tra i totali: ${diff.toFixed(2)} punti`;
   renderEditPanel();
   renderPitch();
-  if (typeof posterRefresh === 'function') posterRefresh();
 }
 function teamCardHtml(p, team, index) {
   const isSelected = swapSelection && swapSelection.team === team && swapSelection.index === index;
@@ -1312,580 +1231,13 @@ function addToTeam() {
   afterTeamEdit();
 }
 
-// ---- Locandina della partita (immagine da condividere) ----
+// Foto caricate in passato dalla vecchia sezione Locandina: restano come ripiego per le carte e le schede
 const PHOTOS_KEY = 'squadre-photos-v1';
-let posterPhotos = (() => { try { return JSON.parse(localStorage.getItem(PHOTOS_KEY) || '{}'); } catch (e) { return {}; } })();
-const posterImgCache = {};
-let posterSig = '';
-let posterManual = false;
-function savePosterPhotos() {
-  try { localStorage.setItem(PHOTOS_KEY, JSON.stringify(posterPhotos)); return true; }
-  catch (e) { return false; }
-}
-function posterNote(msg) {
-  const el = document.getElementById('poster-note');
-  if (!el) return;
-  el.textContent = msg; el.style.display = 'block';
-  clearTimeout(posterNote.t); posterNote.t = setTimeout(() => { el.style.display = 'none'; }, 4000);
-}
-function posterPopulate() {
-  const a = document.getElementById('poster-a'), b = document.getElementById('poster-b');
-  if (!a || !b) return;
-  const sig = roster.map(p => p.id + p.name).join('|') + '#' + (currentTeams ? currentTeams.teamA.map(p => p.id).join(',') + '/' + currentTeams.teamB.map(p => p.id).join(',') : '');
-  if (sig === posterSig) return;
-  posterSig = sig;
-  const opts = roster.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
-  const prevA = a.value, prevB = b.value;
-  a.innerHTML = opts; b.innerHTML = opts;
-  const first = (arr, fallbackIdx) => (arr && arr[0]) ? arr[0].id : (roster[fallbackIdx] ? roster[fallbackIdx].id : '');
-  const defA = first(currentTeams && currentTeams.teamA, 0), defB = first(currentTeams && currentTeams.teamB, 1);
-  a.value = (posterManual && roster.some(p => p.id === prevA)) ? prevA : defA;
-  b.value = (posterManual && roster.some(p => p.id === prevB)) ? prevB : defB;
-}
-function posterLoadImg(id) {
-  return new Promise(resolve => {
-    const src = posterPhotos[id] || safeImage(avatars[id]);
-    if (!src) return resolve(null);
-    if (posterImgCache[id] && posterImgCache[id].src === src) return resolve(posterImgCache[id].img);
-    const img = new Image();
-    img.onload = () => { posterImgCache[id] = { src, img }; resolve(img); };
-    img.onerror = () => resolve(null);
-    img.src = src;
-  });
-}
-function posterFit(ctx, text, maxW, size, weight) {
-  let sz = size;
-  const fam = '"Bricolage Grotesque","DM Sans",sans-serif';
-  do { ctx.font = `${weight} ${sz}px ${fam}`; sz -= 2; } while (ctx.measureText(text).width > maxW && sz > 18);
-}
-let posterBusy = false, posterAgain = false;
-async function posterRefresh() {
-  posterPopulate();
-  const canvas = document.getElementById('poster-canvas');
-  if (!canvas) return;
-  if (posterBusy) { posterAgain = true; return; }
-  posterBusy = true;
-  try {
-    try { await document.fonts.load('800 40px "Bricolage Grotesque"'); await document.fonts.load('600 30px "DM Sans"'); } catch (e) {}
-    await posterDraw(canvas);
-  } catch (e) { console.error('Errore nella locandina:', e); }
-  posterBusy = false;
-  if (posterAgain) { posterAgain = false; posterRefresh(); }
-}
-function posterPath(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath();
-}
-async function posterDraw(canvas) {
-  const W = 1080, H = 1350, ctx = canvas.getContext('2d');
-  const colA = teamMeta.colors.A, colB = teamMeta.colors.B;
-  const nameA = teamMeta.names.A, nameB = teamMeta.names.B;
-  const pa = roster.find(p => p.id === document.getElementById('poster-a').value);
-  const pb = roster.find(p => p.id === document.getElementById('poster-b').value);
-  const imgA = pa ? await posterLoadImg(pa.id) : null;
-  const imgB = pb ? await posterLoadImg(pb.id) : null;
-  const fam = '"Bricolage Grotesque","DM Sans",sans-serif';
-  const YEL = '#ffd23f';
-  ctx.clearRect(0, 0, W, H);
-  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+const legacyPhotos = (() => { try { return JSON.parse(localStorage.getItem(PHOTOS_KEY) || '{}'); } catch (e) { return {}; } })();
 
-  // --- sfondo: base scura + due metà colorate in diagonale
-  ctx.fillStyle = '#080d1c'; ctx.fillRect(0, 0, W, H);
-  const half = (poly, col, gx) => {
-    ctx.save(); ctx.beginPath(); poly.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); ctx.clip();
-    const g = ctx.createLinearGradient(gx, 0, W / 2, H);
-    g.addColorStop(0, col); g.addColorStop(1, '#080d1c');
-    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    ctx.restore();
-  };
-  half([[0, 0], [W * 0.62, 0], [W * 0.38, H], [0, H]], colA, 0);
-  half([[W * 0.62, 0], [W, 0], [W, H], [W * 0.38, H]], colB, W);
-  // strisce diagonali
-  ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 26;
-  for (let x = -H; x < W + H; x += 78) { ctx.beginPath(); ctx.moveTo(x, H); ctx.lineTo(x + H * 0.55, 0); ctx.stroke(); }
-  ctx.restore();
-  // riflettori dietro le foto
-  const spot = (cx, col) => {
-    const g = ctx.createRadialGradient(cx, 640, 40, cx, 640, 420);
-    g.addColorStop(0, col + 'cc'); g.addColorStop(1, col + '00');
-    ctx.fillStyle = g; ctx.fillRect(0, 200, W, 900);
-  };
-  spot(250, colA); spot(W - 250, colB);
-  // taglio centrale luminoso
-  ctx.save();
-  ctx.shadowColor = YEL; ctx.shadowBlur = 40; ctx.strokeStyle = YEL; ctx.lineWidth = 10; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(W * 0.62, 0); ctx.lineTo(W * 0.38, H); ctx.stroke();
-  ctx.restore();
-
-  // --- #MATCHDAY
-  ctx.save();
-  ctx.lineJoin = 'round';
-  posterFit(ctx, '#MATCHDAY', W - 90, 168, 800);
-  ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 24; ctx.shadowOffsetY = 10;
-  ctx.lineWidth = 16; ctx.strokeStyle = '#080d1c'; ctx.strokeText('#MATCHDAY', W / 2, 190);
-  ctx.shadowColor = 'transparent';
-  const hg = ctx.createLinearGradient(0, 70, 0, 200);
-  hg.addColorStop(0, '#ffffff'); hg.addColorStop(1, YEL);
-  ctx.fillStyle = hg; ctx.fillText('#MATCHDAY', W / 2, 190);
-  ctx.restore();
-
-  // titolo in etichetta gialla e data
-  let y = 222;
-  const title = (document.getElementById('poster-title').value || '').trim();
-  if (title) {
-    ctx.save();
-    posterFit(ctx, title.toUpperCase(), W - 280, 40, 800);
-    const tw = ctx.measureText(title.toUpperCase()).width + 70;
-    ctx.fillStyle = YEL; ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 14; ctx.shadowOffsetY = 5;
-    posterPath(ctx, W / 2 - tw / 2, y, tw, 66, 33); ctx.fill();
-    ctx.shadowColor = 'transparent'; ctx.fillStyle = '#10142a';
-    ctx.fillText(title.toUpperCase(), W / 2, y + 46);
-    ctx.restore();
-    y += 66;
-  }
-  const dateStr = new Date(selectedMatchDate()).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
-  ctx.font = '700 36px "DM Sans",sans-serif'; ctx.fillStyle = '#fff';
-  ctx.fillText(dateStr.toUpperCase(), W / 2, y + 52);
-
-  // --- foto con doppio anello e bagliore
-  const R = 200, cy = 650, cxA = 250, cxB = W - 250;
-  const drawFace = (img, p, cx, color) => {
-    ctx.save();
-    ctx.shadowColor = color; ctx.shadowBlur = 60;
-    ctx.beginPath(); ctx.arc(cx, cy, R + 26, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
-    ctx.shadowColor = 'transparent';
-    ctx.beginPath(); ctx.arc(cx, cy, R + 12, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
-    ctx.restore();
-    ctx.save();
-    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.clip();
-    if (img) {
-      const sc = Math.max(2 * R / img.width, 2 * R / img.height);
-      ctx.drawImage(img, cx - img.width * sc / 2, cy - img.height * sc / 2, img.width * sc, img.height * sc);
-    } else {
-      const g = ctx.createLinearGradient(cx - R, cy - R, cx + R, cy + R);
-      g.addColorStop(0, '#26304f'); g.addColorStop(1, '#0d1330');
-      ctx.fillStyle = g; ctx.fillRect(cx - R, cy - R, 2 * R, 2 * R);
-      ctx.fillStyle = '#fff'; ctx.font = `800 150px ${fam}`; ctx.textBaseline = 'middle';
-      const ini = p ? p.name.trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?';
-      ctx.fillText(ini, cx, cy + 8);
-    }
-    ctx.restore();
-    ctx.textBaseline = 'alphabetic';
-  };
-  drawFace(imgA, pa, cxA, colA);
-  drawFace(imgB, pb, cxB, colB);
-
-  // --- VS / risultato in un badge
-  const sa = document.getElementById('poster-score-a').value, sb = document.getElementById('poster-score-b').value;
-  const hasScore = sa !== '' && sb !== '';
-  ctx.save();
-  ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 30; ctx.shadowOffsetY = 10;
-  ctx.fillStyle = YEL;
-  if (hasScore) { posterPath(ctx, W / 2 - 128, cy - 76, 256, 152, 76); ctx.fill(); }
-  else { ctx.beginPath(); ctx.arc(W / 2, cy, 90, 0, Math.PI * 2); ctx.fill(); }
-  ctx.shadowColor = 'transparent'; ctx.lineWidth = 8; ctx.strokeStyle = '#fff'; ctx.stroke();
-  ctx.fillStyle = '#10142a'; ctx.textBaseline = 'middle';
-  const mid = hasScore ? `${sa} - ${sb}` : 'VS';
-  posterFit(ctx, mid, hasScore ? 210 : 120, hasScore ? 92 : 84, 800);
-  ctx.fillText(mid, W / 2, cy + 6);
-  ctx.restore();
-  ctx.textBaseline = 'alphabetic';
-
-  // --- nastri con i nomi delle squadre
-  const ribbon = (cx, col, name, player) => {
-    const rw = 440, rh = 84, ry = cy + R + 56, sk = 26;
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 20; ctx.shadowOffsetY = 8;
-    ctx.beginPath(); ctx.moveTo(cx - rw / 2 + sk, ry); ctx.lineTo(cx + rw / 2, ry); ctx.lineTo(cx + rw / 2 - sk, ry + rh); ctx.lineTo(cx - rw / 2, ry + rh); ctx.closePath();
-    ctx.fillStyle = col; ctx.fill();
-    ctx.shadowColor = 'transparent'; ctx.lineWidth = 6; ctx.strokeStyle = '#fff'; ctx.stroke();
-    ctx.fillStyle = '#fff'; posterFit(ctx, name.toUpperCase(), rw - 110, 54, 800);
-    ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = 8;
-    ctx.fillText(name.toUpperCase(), cx, ry + rh - 24);
-    ctx.restore();
-    if (player) { ctx.font = '700 32px "DM Sans",sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.fillText(player.name, cx, ry + rh + 46); }
-  };
-  ribbon(cxA, colA, nameA, pa);
-  ribbon(cxB, colB, nameB, pb);
-
-  // --- formazioni in pannelli
-  if (document.getElementById('poster-lineups').checked && currentTeams) {
-    const top = 1062, avail = 214;
-    [[currentTeams.teamA, cxA, colA], [currentTeams.teamB, cxB, colB]].forEach(([team, cx, col]) => {
-      const names = team.map(p => p.name).slice(0, 9);
-      const n = names.length || 1;
-      const lh = Math.min(44, Math.floor((avail - 24) / n));
-      const ph = n * lh + 28;
-      ctx.save();
-      ctx.fillStyle = 'rgba(8,13,28,0.62)'; posterPath(ctx, cx - 210, top, 420, ph, 24); ctx.fill();
-      ctx.fillStyle = col; posterPath(ctx, cx - 210, top, 10, ph, 5); ctx.fill();
-      ctx.restore();
-      ctx.fillStyle = '#fff';
-      names.forEach((nm, k) => { posterFit(ctx, nm, 340, Math.round(lh * 0.74), 700); ctx.fillText(nm, cx + 6, top + 14 + lh * (k + 0.74)); });
-    });
-  }
-  // firma
-  ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = '600 24px "DM Sans",sans-serif';
-  ctx.fillText('SQUADRE EQUILIBRATE', W / 2, H - 24);
-}
-function posterUpload(side, input) {
-  const id = document.getElementById(side === 'A' ? 'poster-a' : 'poster-b').value;
-  const file = input.files && input.files[0];
-  input.value = '';
-  if (!id || !file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    const img = new Image();
-    img.onload = () => {
-      const S = 560, c = document.createElement('canvas');
-      c.width = S; c.height = S;
-      const sc = Math.max(S / img.width, S / img.height);
-      c.getContext('2d').drawImage(img, (S - img.width * sc) / 2, (S - img.height * sc) / 2, img.width * sc, img.height * sc);
-      posterPhotos[id] = c.toDataURL('image/jpeg', 0.85);
-      if (!savePosterPhotos()) posterNote('Foto usata ma non salvata: spazio del browser pieno.');
-      posterRefresh();
-    };
-    img.onerror = () => posterNote('Non riesco a leggere questa immagine. Prova con un altro file.');
-    img.src = reader.result;
-  };
-  reader.readAsDataURL(file);
-}
-function posterRemovePhoto(side) {
-  const id = document.getElementById(side === 'A' ? 'poster-a' : 'poster-b').value;
-  if (!id || !posterPhotos[id]) return;
-  delete posterPhotos[id]; delete posterImgCache[id];
-  savePosterPhotos(); posterRefresh();
-}
-async function posterBlob() {
-  await posterRefresh();
-  const canvas = document.getElementById('poster-canvas');
-  return new Promise(res => canvas.toBlob(res, 'image/png'));
-}
-async function posterDownload() {
-  const blob = await posterBlob();
-  if (!blob) { posterNote('Non sono riuscito a creare l\'immagine.'); return; }
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'locandina-partita.png';
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
-}
-async function posterShare() {
-  const blob = await posterBlob();
-  if (!blob) { posterNote('Non sono riuscito a creare l\'immagine.'); return; }
-  const file = new File([blob], 'locandina-partita.png', { type: 'image/png' });
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: 'Locandina partita' }); return; }
-    catch (e) { if (e && e.name === 'AbortError') return; }
-  }
-  await posterDownload();
-  posterNote('Condivisione diretta non disponibile qui: ho scaricato l\'immagine, mandala dal gruppo.');
-}
-
-// ---- Locandine collegate alle partite dello storico ----
-const POSTERS_KEY = 'squadre-posters-v1';
-let posters = (() => { try { return JSON.parse(localStorage.getItem(POSTERS_KEY) || '{}'); } catch (e) { return {}; } })();
-let historyOpenId = null;
-function savePostersLocal() {
-  try { localStorage.setItem(POSTERS_KEY, JSON.stringify(posters)); return true; } catch (e) { return false; }
-}
-async function loadPostersFromDb() {
-  if (!db) return;
-  try {
-    const snap = await db.collection('posters').get();
-    let changed = false;
-    snap.docs.forEach(d => {
-      const data = d.data();
-      const id = (data && data.matchId) || d.id;
-      if (data && data.image && posters[id] !== data.image) { posters[id] = data.image; changed = true; }
-    });
-    if (changed) { savePostersLocal(); renderHistory(); }
-  } catch (e) { console.error('Errore leggendo le locandine:', e); }
-}
-function posterMatchLabel(m) {
-  const d = new Date(m.date).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' });
-  const a = m.teamNames ? m.teamNames.A : 'Squadra A', b = m.teamNames ? m.teamNames.B : 'Squadra B';
-  return `${d} · ${a} vs ${b}${posters[m.id] ? ' (ha già una locandina)' : ''}`;
-}
-function posterPopulateMatches() {
-  const sel = document.getElementById('poster-match');
-  const btn = document.getElementById('poster-save-btn');
-  const hint = document.getElementById('poster-match-hint');
-  if (!sel || !btn) return;
-  const prev = sel.value;
-  const sorted = matches.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
-  sel.innerHTML = sorted.map(m => `<option value="${m.id}">${escapeHtml(posterMatchLabel(m))}</option>`).join('');
-  if (sorted.some(m => m.id === prev)) sel.value = prev;
-  const none = sorted.length === 0;
-  btn.disabled = none;
-  sel.style.display = none ? 'none' : '';
-  if (hint) hint.style.display = none ? 'block' : 'none';
-}
-async function posterStoredDataUrl() {
-  await posterRefresh();
-  const src = document.getElementById('poster-canvas');
-  const c = document.createElement('canvas');
-  c.width = 810; c.height = 1012;
-  c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
-  return c.toDataURL('image/jpeg', 0.82);
-}
-async function posterSaveToHistory() {
-  const sel = document.getElementById('poster-match');
-  const id = sel && sel.value;
-  if (!id || !matches.some(m => m.id === id)) return;
-  const image = await posterStoredDataUrl();
-  posters[id] = image;
-  const okLocal = savePostersLocal();
-  let okDb = !db;
-  if (db) {
-    try { await db.collection('posters').doc(id).set({ matchId: id, image, updatedAt: new Date().toISOString() }); okDb = true; }
-    catch (e) { console.error('Errore salvando la locandina online:', e); }
-  }
-  historyOpenId = id;
-  renderHistory();
-  posterPopulateMatches();
-  if (!okDb) posterNote('Locandina salvata solo su questo dispositivo: online non è passata (controlla le regole di Firestore).');
-  else if (!okLocal && !db) posterNote('Spazio del browser pieno: la locandina non è stata salvata.');
-  else posterNote('Locandina salvata nello storico: la trovi nella partita.');
-  const card = document.querySelector(`#history-list details[data-id="${id}"]`);
-  if (card) card.scrollIntoView({ block: 'center' });
-}
-async function posterRemoveFromHistory(id) {
-  if (isVoteOnlyMode) return;
-  delete posters[id];
-  savePostersLocal();
-  if (db) { try { await db.collection('posters').doc(id).delete(); } catch (e) { console.error(e); } }
-  renderHistory();
-  posterPopulateMatches();
-}
-function posterOpen(id) {
-  const img = posters[id];
-  if (!img) return;
-  const box = document.createElement('div');
-  box.className = 'lightbox';
-  box.innerHTML = `<img alt="Locandina della partita" src="${img}">
-    <div class="row"><a class="btn-primary" style="text-decoration:none; padding:11px 22px; border-radius:999px; font-weight:700; font-size:14px;" href="${img}" download="locandina-partita.jpg">Scarica</a>
-    <button class="btn-ghost" type="button">Chiudi</button></div>`;
-  const close = () => { box.remove(); document.removeEventListener('keydown', onKey); };
-  const onKey = e => { if (e.key === 'Escape') close(); };
-  box.addEventListener('click', e => { if (e.target === box || e.target.tagName === 'BUTTON') close(); });
-  document.addEventListener('keydown', onKey);
-  document.body.appendChild(box);
-}
-
-// ---- Quotazioni (solo per gioco, senza denaro) ----
-const ODDS_MARGIN = 0.95;
-function oddsFrom(p) {
-  const raw = ODDS_MARGIN / Math.max(p, 0.01);
-  return Math.max(1.05, Math.round(raw * 20) / 20);
-}
 function matchHasResult(m) {
   return Object.values(m.entries || {}).some(e => e && (e.goals > 0 || e.assists > 0 || e.og > 0 || e.mvp));
 }
-function poissonOver(mu, line) {
-  // P(totale gol > line) con line del tipo k + 0.5
-  const k = Math.floor(line);
-  let cum = 0, term = Math.exp(-mu);
-  for (let i = 0; i <= k; i++) { cum += term; term *= mu / (i + 1); }
-  return 1 - cum;
-}
-function renderOdds() {
-  const sel = document.getElementById('odds-match-select');
-  const box = document.getElementById('odds-content');
-  if (!sel || !box) return;
-  const sorted = matches.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
-  if (sorted.length === 0) {
-    sel.style.display = 'none';
-    box.innerHTML = '<p class="empty-note">Nessuna partita in programma: le quotazioni compaiono quando viene salvata una partita.</p>';
-    renderSlip();
-    return;
-  }
-  sel.style.display = '';
-  const prev = sel.value;
-  sel.innerHTML = sorted.map(m => {
-    const d = new Date(m.date).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' });
-    const a = m.teamNames ? m.teamNames.A : 'Squadra A', b = m.teamNames ? m.teamNames.B : 'Squadra B';
-    return `<option value="${m.id}">${escapeHtml(d)} · ${escapeHtml(a)} vs ${escapeHtml(b)}${matchHasResult(m) ? '' : ' (da giocare)'}</option>`;
-  }).join('');
-  const upcoming = sorted.find(m => !matchHasResult(m));
-  sel.value = sorted.some(m => m.id === prev) ? prev : (upcoming || sorted[0]).id;
-  const m = sorted.find(x => x.id === sel.value);
-  const teamA = m.teamA || [], teamB = m.teamB || [];
-  const nameA = m.teamNames ? m.teamNames.A : 'Squadra A', nameB = m.teamNames ? m.teamNames.B : 'Squadra B';
-  const colA = m.teamColors ? m.teamColors.A : '#1c7a52', colB = m.teamColors ? m.teamColors.B : '#d98a00';
-  if (teamA.length === 0 || teamB.length === 0) { box.innerHTML = '<p class="empty-note">Squadre non disponibili per questa partita.</p>'; return; }
-
-  // forza delle squadre: media dei punteggi dei giocatori
-  const avg = list => list.reduce((t, p) => t + (typeof p.score === 'number' ? p.score : 6), 0) / list.length;
-  const x = avg(teamA) - avg(teamB);
-
-  // storico (esclusa questa partita)
-  const past = matches.filter(o => o.id !== m.id);
-  const stats = {};
-  let totGoals = 0, playedWithResult = 0;
-  past.forEach(o => {
-    const ents = o.entries || {};
-    const hasRes = matchHasResult(o);
-    if (hasRes) { playedWithResult++; totGoals += Object.values(ents).reduce((t, e) => t + ((e && e.goals) || 0) + ((e && e.og) || 0), 0); }
-    [...(o.teamA || []), ...(o.teamB || [])].forEach(pl => {
-      const st = stats[pl.id] || (stats[pl.id] = { games: 0, goals: 0, mvp: 0 });
-      if (hasRes) { st.games++; st.goals += (ents[pl.id] && ents[pl.id].goals) || 0; if (ents[pl.id] && ents[pl.id].mvp) st.mvp++; }
-    });
-  });
-  const mu = playedWithResult >= 2 ? totGoals / playedWithResult : 8;
-
-  // gol attesi delle due squadre (Poisson indipendenti) e tutte le probabilità da lì
-  const share = 1 / (1 + Math.exp(-0.45 * x));
-  const muA = mu * share, muB = mu * (1 - share);
-  const N = 16;
-  const pmf = lam => { const r = [Math.exp(-lam)]; for (let k = 1; k <= N; k++) r.push(r[k - 1] * lam / k); return r; };
-  const PA = pmf(muA), PB = pmf(muB);
-  let pA = 0, pD = 0, pB = 0, norm = 0;
-  const tot = new Array(2 * N + 1).fill(0), exact = [];
-  for (let i = 0; i <= N; i++) for (let j = 0; j <= N; j++) {
-    const q = PA[i] * PB[j]; norm += q; tot[i + j] += q; exact.push({ i, j, q });
-    if (i > j) pA += q; else if (i === j) pD += q; else pB += q;
-  }
-  pA /= norm; pD /= norm; pB /= norm; tot.forEach((v, k) => { tot[k] = v / norm; }); exact.forEach(e => { e.q /= norm; });
-  const overP = line => tot.reduce((t, v, k) => t + (k > line ? v : 0), 0);
-  const rangeP = (lo, hi) => tot.reduce((t, v, k) => t + (k >= lo && k <= hi ? v : 0), 0);
-  const line = Math.max(0.5, Math.round(mu) - 0.5);
-  const bothScore = (1 - Math.exp(-muA)) * (1 - Math.exp(-muB));
-  const pct = q => Math.round(q * 100) + '%';
-
-  const attr = t => escapeHtml(String(t)).replace(/"/g, '&quot;');
-  // tasto selezionabile: group = mercato (una sola scelta per gruppo)
-  const tile = (group, market, sel, p, fav, label) => {
-    const o = oddsFrom(p).toFixed(2);
-    return `<button type="button" class="odd-tile ${fav ? 'fav' : ''}" data-group="${attr(group)}" data-market="${attr(market)}" data-sel="${attr(sel)}" data-odd="${o}" aria-pressed="false" onclick="oddsToggle(this)"><span class="odd-key">${escapeHtml(sel)}</span><span class="odd-val">${o}</span><span class="odd-pct">${label || ''}</span></button>`;
-  };
-  const maxP = Math.max(pA, pD, pB);
-
-  const multigol = [];
-  const bins = [[0, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 99]];
-  bins.forEach(([lo, hi]) => { const q = rangeP(lo, hi); if (q >= 0.02) multigol.push({ label: hi === 99 ? lo + '+' : lo + '-' + hi, q }); });
-  const exactTop = exact.slice().sort((u, v) => v.q - u.q).slice(0, 6);
-
-  // altri mercati dallo stesso modello
-  const sumExact = f => exact.reduce((t, e) => t + (f(e) ? e.q : 0), 0);
-  const hcpA = sumExact(e => e.i - e.j >= 2);   // A vince con almeno 2 gol di scarto
-  const hcpB = sumExact(e => e.j - e.i >= 2);
-  const marA1 = sumExact(e => e.i - e.j === 1), marA2 = sumExact(e => e.i - e.j === 2), marA3 = sumExact(e => e.i - e.j >= 3);
-  const marB1 = sumExact(e => e.j - e.i === 1), marB2 = sumExact(e => e.j - e.i === 2), marB3 = sumExact(e => e.j - e.i >= 3);
-  const cA_over = sumExact(e => e.i > e.j && e.i + e.j > line), cA_under = sumExact(e => e.i > e.j && e.i + e.j < line);
-  const cB_over = sumExact(e => e.j > e.i && e.i + e.j > line), cB_under = sumExact(e => e.j > e.i && e.i + e.j < line);
-  const lineA = Math.max(0.5, Math.round(muA) - 0.5), lineB = Math.max(0.5, Math.round(muB) - 0.5);
-  const teamOver = (P, L) => P.reduce((t, v, k) => t + (k > L ? v : 0), 0) / P.reduce((t, v) => t + v, 0);
-  const aOver = teamOver(PA, lineA), bOver = teamOver(PB, lineB);
-  const pEven = tot.reduce((t, v, k) => t + (k % 2 === 0 ? v : 0), 0);
-
-  const players = [
-    ...teamA.map(p => ({ p, col: colA })),
-    ...teamB.map(p => ({ p, col: colB }))
-  ];
-  const lamOf = id => { const st = stats[id] || { games: 0, goals: 0, mvp: 0 }; return (st.goals + 0.35) / (st.games + 1); };
-  const scorerRows = players.map(({ p, col }) => ({ id: p.id, name: p.name, col, prob: Math.min(0.9, 1 - Math.exp(-lamOf(p.id))) }))
-    .sort((a, b) => b.prob - a.prob).slice(0, 6);
-  const doubleRows = players.map(({ p, col }) => { const l = lamOf(p.id); return { id: p.id, name: p.name, col, prob: Math.min(0.6, 1 - Math.exp(-l) * (1 + l)) }; })
-    .sort((a, b) => b.prob - a.prob).slice(0, 6);
-  const mvpW = players.map(({ p, col }) => {
-    const st = stats[p.id] || { mvp: 0 };
-    const sc = typeof p.score === 'number' ? p.score : 6;
-    return { id: p.id, name: p.name, col, w: Math.exp(0.7 * (sc - 6)) * (1 + 0.4 * st.mvp) };
-  });
-  const wSum = mvpW.reduce((t, r) => t + r.w, 0);
-  const mvpRows = mvpW.map(r => ({ ...r, prob: r.w / wSum })).sort((a, b) => b.prob - a.prob).slice(0, 6);
-  const playerRow = (market, groupOf) => r => {
-    const o = oddsFrom(r.prob).toFixed(2);
-    return `<button type="button" class="odds-row" style="border-left:4px solid ${r.col};" data-group="${attr(groupOf(r))}" data-market="${attr(market)}" data-sel="${attr(r.name)}" data-odd="${o}" aria-pressed="false" onclick="oddsToggle(this)"><span>${escapeHtml(r.name)}</span><span><span class="pct">${Math.round(r.prob * 100)}%</span><span class="odd-val">${o}</span></span></button>`;
-  };
-  const ouRow = l => {
-    const o = overP(l);
-    const mini = (sel, pr) => { const od = oddsFrom(pr).toFixed(2); return `<button type="button" class="odd-mini" data-group="ou:${l}" data-market="Gol totali ${l.toFixed(1)}" data-sel="${sel}" data-odd="${od}" aria-pressed="false" onclick="oddsToggle(this)"><span class="pct">${sel} ${pct(pr)}</span><span class="odd-val">${od}</span></button>`; };
-    return `<div class="odds-row odds-row-static"><span>Linea ${l.toFixed(1)}</span><span class="odd-pair">${mini('Meno', 1 - o)}${mini('Più', o)}</span></div>`;
-  };
-
-  box.innerHTML = `
-    <div class="odds-head"><span style="color:${colA}">${escapeHtml(nameA)}</span><span style="color:var(--text-muted); font-size:15px;">vs</span><span style="color:${colB}">${escapeHtml(nameB)}</span></div>
-    <p class="hint" style="text-align:center; margin:-6px 0 14px;">Tocca le quote per aggiungerle alla tua schedina.</p>
-    <div class="odds-market-title" style="margin-top:0;">Esito finale (1 X 2)</div>
-    <div class="odds-grid">
-      ${tile('esito', 'Esito finale', '1 · ' + nameA, pA, pA === maxP, pct(pA))}
-      ${tile('esito', 'Esito finale', 'X · Pareggio', pD, pD === maxP, pct(pD))}
-      ${tile('esito', 'Esito finale', '2 · ' + nameB, pB, pB === maxP, pct(pB))}
-    </div>
-    <div class="odds-market-title">Doppia chance</div>
-    <div class="odds-grid">
-      ${tile('dc', 'Doppia chance', '1X', pA + pD, false, pct(pA + pD))}
-      ${tile('dc', 'Doppia chance', '12', pA + pB, false, pct(pA + pB))}
-      ${tile('dc', 'Doppia chance', 'X2', pD + pB, false, pct(pD + pB))}
-    </div>
-    <div class="odds-market-title">Under / Over gol totali</div>
-    ${[line - 1, line, line + 1].filter(l => l > 0).map(ouRow).join('')}
-    <div class="odds-market-title">Multigol (gol totali)</div>
-    <div class="odds-grid">
-      ${multigol.map(r => tile('multigol', 'Multigol', r.label + ' gol', r.q, false, pct(r.q))).join('')}
-    </div>
-    <div class="odds-market-title">Gol / No gol (segnano entrambe)</div>
-    <div class="odds-grid two">
-      ${tile('gng', 'Gol / No gol', 'Gol', bothScore, bothScore >= 0.5, pct(bothScore))}
-      ${tile('gng', 'Gol / No gol', 'No gol', 1 - bothScore, bothScore < 0.5, pct(1 - bothScore))}
-    </div>
-    <div class="odds-market-title">Handicap ±1,5</div>
-    <div class="odds-grid two">
-      ${tile('hcpA', 'Handicap', nameA + ' −1,5', hcpA, false, pct(hcpA))}
-      ${tile('hcpA', 'Handicap', nameB + ' +1,5', 1 - hcpA, false, pct(1 - hcpA))}
-      ${tile('hcpB', 'Handicap', nameB + ' −1,5', hcpB, false, pct(hcpB))}
-      ${tile('hcpB', 'Handicap', nameA + ' +1,5', 1 - hcpB, false, pct(1 - hcpB))}
-    </div>
-    <div class="odds-market-title">Margine di vittoria</div>
-    <div class="odds-grid">
-      ${tile('margine', 'Margine di vittoria', nameA + ' di 1 gol', marA1, false, pct(marA1))}
-      ${tile('margine', 'Margine di vittoria', nameA + ' di 2 gol', marA2, false, pct(marA2))}
-      ${tile('margine', 'Margine di vittoria', nameA + ' di 3+ gol', marA3, false, pct(marA3))}
-      ${tile('margine', 'Margine di vittoria', nameB + ' di 1 gol', marB1, false, pct(marB1))}
-      ${tile('margine', 'Margine di vittoria', nameB + ' di 2 gol', marB2, false, pct(marB2))}
-      ${tile('margine', 'Margine di vittoria', nameB + ' di 3+ gol', marB3, false, pct(marB3))}
-    </div>
-    <div class="odds-market-title">Esito + Under/Over ${line.toFixed(1)}</div>
-    <div class="odds-grid two">
-      ${tile('combo', 'Esito + gol', '1 + Più di ' + line.toFixed(1), cA_over, false, pct(cA_over))}
-      ${tile('combo', 'Esito + gol', '1 + Meno di ' + line.toFixed(1), cA_under, false, pct(cA_under))}
-      ${tile('combo', 'Esito + gol', '2 + Più di ' + line.toFixed(1), cB_over, false, pct(cB_over))}
-      ${tile('combo', 'Esito + gol', '2 + Meno di ' + line.toFixed(1), cB_under, false, pct(cB_under))}
-    </div>
-    <div class="odds-market-title">Gol di una singola squadra</div>
-    <div class="odds-grid two">
-      ${tile('tgA', 'Gol ' + nameA, 'Più di ' + lineA.toFixed(1), aOver, false, nameA + ' · ' + pct(aOver))}
-      ${tile('tgA', 'Gol ' + nameA, 'Meno di ' + lineA.toFixed(1), 1 - aOver, false, nameA + ' · ' + pct(1 - aOver))}
-      ${tile('tgB', 'Gol ' + nameB, 'Più di ' + lineB.toFixed(1), bOver, false, nameB + ' · ' + pct(bOver))}
-      ${tile('tgB', 'Gol ' + nameB, 'Meno di ' + lineB.toFixed(1), 1 - bOver, false, nameB + ' · ' + pct(1 - bOver))}
-    </div>
-    <div class="odds-market-title">Gol totali pari / dispari</div>
-    <div class="odds-grid two">
-      ${tile('pd', 'Pari / dispari', 'Pari', pEven, false, pct(pEven))}
-      ${tile('pd', 'Pari / dispari', 'Dispari', 1 - pEven, false, pct(1 - pEven))}
-    </div>
-    <div class="odds-market-title">Risultato esatto</div>
-    <div class="odds-grid">
-      ${exactTop.map(r => tile('esatto', 'Risultato esatto', r.i + ' - ' + r.j, r.q, false, pct(r.q))).join('')}
-    </div>
-    <div class="odds-market-title">Segna almeno un gol</div>
-    ${scorerRows.map(playerRow('Segna almeno un gol', r => 'scorer:' + r.id)).join('')}
-    <div class="odds-market-title">Doppietta (2 o più gol)</div>
-    ${doubleRows.map(playerRow('Doppietta', r => 'doppia:' + r.id)).join('')}
-    <div class="odds-market-title">MVP della partita</div>
-    ${mvpRows.map(playerRow('MVP', () => 'mvp')).join('')}
-    <details style="margin-top:16px;">
-      <summary style="cursor:pointer; font-size:13.5px; color:var(--text-secondary); font-weight:600;">Come si calcolano le quote</summary>
-      <p class="hint" style="margin-top:8px;">Stimo quanti gol farà ogni squadra: in tutto ${mu.toFixed(1)} a partita${playedWithResult >= 2 ? ' (media delle partite giocate)' : ' (stima di partenza: servono almeno 2 partite con risultato)'}, divisi in base alla forza delle squadre (differenza di media punteggio ${x >= 0 ? '+' : ''}${x.toFixed(2)}): ${muA.toFixed(1)} per ${escapeHtml(nameA)} e ${muB.toFixed(1)} per ${escapeHtml(nameB)}. Da qui ricavo tutte le probabilità: esito, doppia chance, under/over, multigol, gol/no gol, handicap, margine di vittoria, combinazioni, gol di una squadra, pari/dispari e risultato esatto. Marcatori e doppietta: gol fatti per partita da ciascuno, con una piccola base per chi ha giocato poco. MVP: punteggio del giocatore e MVP già vinti. La quota è 0,95 diviso la probabilità, arrotondata a 0,05. Nella schedina la quota totale è il prodotto delle quote scelte.</p>
-    </details>`;
-  oddsRestorePicks(m);
-}
-
 // ---- Video della partita (YouTube incorporato) ----
 function youtubeId(url) {
   if (!url || typeof url !== 'string') return null;
@@ -1897,138 +1249,6 @@ function loadVideo(btn) {
   if (!box) return;
   const id = box.dataset.vid;
   btn.outerHTML = `<div class="video-frame"><iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0" title="Video della partita" allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`;
-}
-
-// ---- Schedina: quote selezionabili, quota totale, immagine e stampa ----
-const ODDS_PICKS_KEY = 'squadre-oddspicks-v1';
-let oddsPicks = (() => { try { return JSON.parse(localStorage.getItem(ODDS_PICKS_KEY) || '{}'); } catch (e) { return {}; } })();
-function saveOddsPicks() { try { localStorage.setItem(ODDS_PICKS_KEY, JSON.stringify(oddsPicks)); } catch (e) {} }
-function currentOddsMatch() {
-  const sel = document.getElementById('odds-match-select');
-  return sel ? matches.find(x => x.id === sel.value) : null;
-}
-function oddsToggle(btn) {
-  const m = currentOddsMatch();
-  if (!m) return;
-  const list = oddsPicks[m.id] = oddsPicks[m.id] || [];
-  const group = btn.dataset.group;
-  const idx = list.findIndex(x => x.group === group);
-  const same = idx >= 0 && list[idx].sel === btn.dataset.sel && list[idx].market === btn.dataset.market;
-  if (idx >= 0) list.splice(idx, 1);
-  if (!same) list.push({ group, market: btn.dataset.market, sel: btn.dataset.sel, odd: parseFloat(btn.dataset.odd) });
-  saveOddsPicks();
-  oddsRestorePicks(m);
-}
-function oddsRestorePicks(m) {
-  const list = (oddsPicks[m.id] || []);
-  const kept = [];
-  document.querySelectorAll('#odds-content [data-group]').forEach(b => { b.classList.remove('picked'); b.setAttribute('aria-pressed', 'false'); });
-  list.forEach(pk => {
-    const b = [...document.querySelectorAll('#odds-content [data-group]')].find(x => x.dataset.group === pk.group && x.dataset.sel === pk.sel && x.dataset.market === pk.market);
-    if (!b) return;
-    pk.odd = parseFloat(b.dataset.odd);
-    b.classList.add('picked'); b.setAttribute('aria-pressed', 'true');
-    kept.push(pk);
-  });
-  oddsPicks[m.id] = kept;
-  renderSlip();
-}
-let slipOpen = false;
-function slipTotal(list) { return list.reduce((t, x) => t * x.odd, 1); }
-function slipTotalText(list) { const t = slipTotal(list); return t >= 1000 ? t.toFixed(0) : t.toFixed(2); }
-function slipRemove(i) {
-  const m = currentOddsMatch(); if (!m) return;
-  (oddsPicks[m.id] || []).splice(i, 1); saveOddsPicks(); oddsRestorePicks(m);
-}
-function slipClear() {
-  const m = currentOddsMatch(); if (!m) return;
-  oddsPicks[m.id] = []; saveOddsPicks(); oddsRestorePicks(m);
-}
-function slipMatchTitle(m) {
-  const a = m.teamNames ? m.teamNames.A : 'Squadra A', b = m.teamNames ? m.teamNames.B : 'Squadra B';
-  const d = new Date(m.date).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
-  return { title: `${a} vs ${b}`, date: d };
-}
-function renderSlip() {
-  const box = document.getElementById('odds-slip');
-  const pr = document.getElementById('slip-print');
-  const m = currentOddsMatch();
-  if (!box) return;
-  const list = m ? (oddsPicks[m.id] || []) : [];
-  if (!m || list.length === 0) {
-    box.innerHTML = m ? '<div class="slip-empty">La tua schedina è vuota: tocca le quote per aggiungerle.</div>' : '';
-    if (pr) pr.innerHTML = '';
-    return;
-  }
-  box.innerHTML = `<details class="slip" ${slipOpen ? 'open' : ''} ontoggle="slipOpen = this.open">
-    <summary><span>La tua schedina · ${list.length} ${list.length === 1 ? 'scelta' : 'scelte'}</span><span>Quota totale <span class="slip-total">${slipTotalText(list)}</span></span></summary>
-    ${list.map((x, i) => `<div class="slip-item"><span>${escapeHtml(x.sel)}<small>${escapeHtml(x.market)}</small></span><span class="row" style="gap:4px;"><span class="o">${x.odd.toFixed(2)}</span><button type="button" aria-label="Togli dalla schedina" onclick="slipRemove(${i})">&times;</button></span></div>`).join('')}
-    <div class="slip-actions">
-      <button type="button" class="btn-primary" onclick="slipShare()">Condividi immagine</button>
-      <button type="button" class="btn-ghost" onclick="slipPrint()">Stampa</button>
-      <button type="button" class="btn-ghost" onclick="slipClear()">Svuota</button>
-    </div>
-  </details>`;
-  if (pr) {
-    const t = slipMatchTitle(m);
-    pr.innerHTML = `<h1>Schedina</h1><p class="sp-sub">${escapeHtml(t.title)} · ${escapeHtml(t.date)}</p>
-      ${list.map(x => `<div class="sp-row"><span>${escapeHtml(x.sel)}<small>${escapeHtml(x.market)}</small></span><strong>${x.odd.toFixed(2)}</strong></div>`).join('')}
-      <div class="sp-total"><span>Quota totale</span><span>${slipTotalText(list)}</span></div>
-      <p class="sp-note">Solo per gioco: nessuna puntata e nessun denaro.</p>`;
-  }
-}
-function slipPrint() {
-  const m = currentOddsMatch(); if (!m || !(oddsPicks[m.id] || []).length) return;
-  renderSlip();
-  document.body.classList.add('printing-slip');
-  const done = () => { document.body.classList.remove('printing-slip'); window.removeEventListener('afterprint', done); };
-  window.addEventListener('afterprint', done);
-  setTimeout(() => { try { window.print(); } catch (e) { done(); } }, 50);
-}
-async function slipBlob() {
-  const m = currentOddsMatch(); if (!m) return null;
-  const list = oddsPicks[m.id] || []; if (!list.length) return null;
-  try { await document.fonts.load('800 40px "Bricolage Grotesque"'); await document.fonts.load('600 30px "DM Sans"'); } catch (e) {}
-  const W = 1080, rowH = 104, top = 330, H = top + list.length * rowH + 230;
-  const c = document.createElement('canvas'); c.width = W; c.height = H;
-  const ctx = c.getContext('2d');
-  const fam = '"Bricolage Grotesque","DM Sans",sans-serif', YEL = '#ffd23f';
-  const bg = ctx.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#0a1530'); bg.addColorStop(1, '#16328c');
-  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-  ctx.textBaseline = 'alphabetic';
-  ctx.textAlign = 'center'; ctx.fillStyle = YEL; ctx.font = `800 96px ${fam}`; ctx.fillText('SCHEDINA', W / 2, 140);
-  const t = slipMatchTitle(m);
-  ctx.fillStyle = '#fff'; ctx.font = `700 44px ${fam}`;
-  let fs = 44; while (ctx.measureText(t.title).width > W - 120 && fs > 24) { fs -= 2; ctx.font = `700 ${fs}px ${fam}`; }
-  ctx.fillText(t.title, W / 2, 214);
-  ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.font = '600 32px "DM Sans",sans-serif'; ctx.fillText(t.date, W / 2, 262);
-  list.forEach((x, i) => {
-    const y = top + i * rowH;
-    ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(50, y, W - 100, rowH - 14, 22) : ctx.rect(50, y, W - 100, rowH - 14); ctx.fill();
-    ctx.textAlign = 'left'; ctx.fillStyle = '#fff'; ctx.font = `700 34px ${fam}`;
-    let f2 = 34; while (ctx.measureText(x.sel).width > W - 330 && f2 > 20) { f2 -= 2; ctx.font = `700 ${f2}px ${fam}`; }
-    ctx.fillText(x.sel, 80, y + 42);
-    ctx.fillStyle = 'rgba(255,255,255,.65)'; ctx.font = '600 24px "DM Sans",sans-serif'; ctx.fillText(x.market, 80, y + 74);
-    ctx.textAlign = 'right'; ctx.fillStyle = YEL; ctx.font = `800 44px ${fam}`; ctx.fillText(x.odd.toFixed(2), W - 80, y + 58);
-  });
-  const by = top + list.length * rowH + 20;
-  ctx.fillStyle = YEL; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(50, by, W - 100, 120, 30) : ctx.rect(50, by, W - 100, 120); ctx.fill();
-  ctx.fillStyle = '#10142a'; ctx.textAlign = 'left'; ctx.font = `800 40px ${fam}`; ctx.fillText('QUOTA TOTALE', 90, by + 74);
-  ctx.textAlign = 'right'; ctx.font = `800 62px ${fam}`; ctx.fillText(slipTotalText(list), W - 90, by + 80);
-  ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.font = '600 24px "DM Sans",sans-serif';
-  ctx.fillText('SOLO PER GIOCO · NESSUN DENARO', W / 2, H - 28);
-  return new Promise(res => c.toBlob(res, 'image/png'));
-}
-async function slipShare() {
-  const blob = await slipBlob(); if (!blob) return;
-  const file = new File([blob], 'schedina.png', { type: 'image/png' });
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: 'Schedina' }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
-  }
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = 'schedina.png';
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
 function escapeHtml(str) {
@@ -2121,6 +1341,7 @@ function setMvp(id) {
 function quickSaveMatch() {
   saveMatch();
   const historySection = document.getElementById('history-section');
+  expandSection(historySection);
   if (historySection) historySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 function saveMatch() {
@@ -2456,8 +1677,6 @@ let editingMatchId = null;
 function renderHistory() {
   const container = document.getElementById('history-list');
   if (!container) return;
-  if (typeof posterPopulateMatches === 'function') posterPopulateMatches();
-  if (typeof renderOdds === 'function') renderOdds();
   if (matches.length === 0) {
     container.innerHTML = '<p class="empty-note">Nessuna partita salvata ancora.</p>';
     return;
@@ -2539,7 +1758,7 @@ function renderHistory() {
     return `
       <details class="player" data-id="${m.id}" ${historyOpenId === m.id ? 'open' : ''}>
         <summary>
-          <span class="player-name">${dateStr}${posters[m.id] ? ` <img class="poster-thumb" src="${posters[m.id]}" alt="" style="vertical-align:middle; margin-left:8px;">` : ''}</span>
+          <span class="player-name">${dateStr}</span>
           <span class="row" style="gap:10px;">
             <span style="font-size:12px; color:var(--text-muted);">${escapeHtml(namesA)} <strong style="color:var(--text);">${golA}-${golB}</strong> ${escapeHtml(namesB)}</span>
             ${isVoteOnlyMode ? '' : `
@@ -2548,10 +1767,6 @@ function renderHistory() {
           </span>
         </summary>
         <div class="player-body">
-          ${posters[m.id] ? `<div style="text-align:center; margin-top:12px;">
-            <img class="match-poster" src="${posters[m.id]}" alt="Locandina della partita" onclick="posterOpen('${m.id}')">
-            ${isVoteOnlyMode ? '' : `<button class="btn-danger-ghost" onclick="posterRemoveFromHistory('${m.id}')">Rimuovi locandina</button>`}
-          </div>` : ''}
           ${youtubeId(m.videoUrl) ? `<div class="video-box" data-vid="${youtubeId(m.videoUrl)}" style="margin:12px 0;">
             <button type="button" class="video-play" onclick="loadVideo(this)" aria-label="Guarda il video della partita"><span>&#9654;</span> Guarda il video della partita</button>
             <p style="text-align:center; margin:6px 0 0;"><a href="https://www.youtube.com/watch?v=${youtubeId(m.videoUrl)}" target="_blank" rel="noopener" style="font-size:12.5px; color:var(--text-muted);">Apri su YouTube</a></p>
@@ -2616,7 +1831,6 @@ function saveMatchEdit(id) {
 function deleteMatch(id) {
   if (isVoteOnlyMode) return;
   matches = matches.filter(m => m.id !== id);
-  if (posters[id]) { delete posters[id]; savePostersLocal(); if (db) { try { db.collection('posters').doc(id).delete(); } catch (e) {} } }
   saveMatches();
   renderHistory();
   renderRankings();
@@ -3071,7 +2285,7 @@ let avatars = (() => { try { return JSON.parse(localStorage.getItem(AVATARS_KEY)
 let playerModalId = null;
 function saveAvatarsLocal() { try { localStorage.setItem(AVATARS_KEY, JSON.stringify(avatars)); return true; } catch (e) { return false; } }
 function safeImage(src) { return (typeof src === 'string' && /^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(src)) ? src : null; }
-function avatarSrc(id) { return safeImage(avatars[id]) || (isVoteOnlyMode ? null : safeImage(posterPhotos[id])); }
+function avatarSrc(id) { return safeImage(avatars[id]) || (isVoteOnlyMode ? null : safeImage(legacyPhotos[id])); }
 function avatarColor(id) { let h = 0; for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return `hsl(${h % 360} 55% 42%)`; }
 function playerNameOf(id) {
   const r = roster.find(x => x.id === id);
@@ -3223,6 +2437,7 @@ function openPlayer(id) {
       ${avatars[id] ? `<button type="button" class="btn-danger-ghost" onclick="avatarRemove('${id}')">Rimuovi foto</button>` : ''}
     </div>
     <p class="hint" id="pm-note" style="display:none; margin-top:6px;"></p>` : ''}
+    ${admin ? '<div id="pm-card"></div>' : ''}
     <div class="pm-sec">Numeri</div>
     <div class="pm-grid">
       <div class="pm-stat"><b>${st.games}</b><span>Partite</span></div>
@@ -3243,6 +2458,7 @@ function openPlayer(id) {
     }).join('') : '<p class="empty-note">Nessuna partita giocata ancora.</p>'}`;
   modal.hidden = false;
   playerPerfInto(id);
+  if (admin) cardRenderInto(id);
 }
 function closePlayer() {
   const modal = document.getElementById('player-modal');
@@ -3284,6 +2500,312 @@ async function playerPerfInto(id) {
       ${series.length >= 2 ? `<div class="pm-sec">Andamento partita per partita</div>${sparkSvg(series, stats.groupMean)}<p class="hint">La linea tratteggiata è la media del gruppo (${stats.groupMean.toFixed(2)}).</p>` : ''}`
     : '<p class="empty-note">Nessun voto di prestazione ancora.</p>'}
     <div class="pm-match" style="margin-top:8px;"><span>Voti MVP nei sondaggi</span><span><strong>${mvpVotes}</strong>${polls ? ` · in ${polls} ${polls === 1 ? 'partita' : 'partite'}` : ''}</span></div>`;
+}
+/* ---- Carta giocatore (stile figurina): solo admin, da condividere come immagine ---- */
+const CARD_TIERS = {
+  bronzo:  { label: 'BRONZO',  g: ['#7a4a21', '#c98a4b', '#e9bd8a'], ink: '#2b1706', line: 'rgba(43,23,6,.35)' },
+  argento: { label: 'ARGENTO', g: ['#7e8797', '#cfd6e1', '#f1f4f9'], ink: '#101a33', line: 'rgba(16,26,51,.3)' },
+  oro:     { label: 'ORO',     g: ['#a87405', '#f0c23a', '#ffeaa0'], ink: '#2a1d00', line: 'rgba(42,29,0,.35)' },
+  speciale:{ label: 'SPECIALE', g: ['#071026', '#14338f', '#2a5bd6'], ink: '#ffffff', line: 'rgba(245,179,1,.7)' }
+};
+const CARD_POS = { difensore_centrale: 'DC', terzino: 'TD', mediano: 'MED', centrocampista_centrale: 'CC', trequartista: 'TRQ', ala: 'ALA', attaccante_centrale: 'ATT' };
+const CARD_ROLE_W = {
+  difensore:      { TIR: .08, PAS: .12, DRI: .10, DIF: .32, FIS: .20, MEN: .18 },
+  centrocampista: { TIR: .12, PAS: .26, DRI: .20, DIF: .10, FIS: .14, MEN: .18 },
+  attaccante:     { TIR: .30, PAS: .10, DRI: .20, DIF: .05, FIS: .17, MEN: .18 }
+};
+function cardClamp(v) { return Math.max(0, Math.min(10, v)); }
+function cardTier(ovr) { return ovr >= 85 ? 'speciale' : ovr >= 75 ? 'oro' : ovr >= 60 ? 'argento' : 'bronzo'; }
+async function cardCompute(id) {
+  const r = roster.find(x => x.id === id);
+  if (!r) return null;
+  const vote = k => (r.votes && typeof r.votes[k] === 'number') ? r.votes[k] : 5;
+  const avg = list => list.reduce((t, k) => t + vote(k), 0) / list.length;
+  const st = playerStatsFor(id);
+  const gpm = st.games ? st.goals / st.games : 0;
+  const apm = st.games ? st.assists / st.games : 0;
+  const attrs = {
+    TIR: cardClamp(vote('tiro') + Math.min(1.5, gpm * 0.8)),
+    PAS: cardClamp(vote('passaggio') + Math.min(1.5, apm * 1.0)),
+    DRI: cardClamp(vote('controllo')),
+    DIF: cardClamp(vote('posizionamento') * 0.7 + vote('potenza') * 0.3),
+    FIS: cardClamp(avg(['velocita', 'resistenza', 'potenza'])),
+    MEN: cardClamp(avg(['pressione', 'costanza', 'aggressivita', 'fairplay']) + Math.min(1, st.mvp * 0.3))
+  };
+  const roleId = r.role || DEFAULT_ROLE;
+  const macro = (ROLES.find(x => x.id === roleId) || {}).macro || 'centrocampista';
+  const w = CARD_ROLE_W[macro];
+  let base = Object.keys(w).reduce((t, k) => t + attrs[k] * w[k], 0) * 10;
+  // forma recente: media pesata dei voti di prestazione degli amici, se esiste
+  let docs = [];
+  if (db) { try { docs = (await db.collection('perf-votes').get()).docs.map(d => d.data()); } catch (e) {} }
+  if (docs.length === 0) docs = Object.values(loadLocalVotes());
+  const perf = weightedAverages(computeOverallPerformance(docs))[id];
+  const ovr = Math.min(99, Math.round(perf ? base * 0.75 + perf.weighted * 10 * 0.25 : base));
+  return {
+    id, name: r.name, ovr, tier: cardTier(ovr), pos: CARD_POS[roleId] || 'CC',
+    attrs: Object.fromEntries(Object.entries(attrs).map(([k, v]) => [k, Math.min(99, Math.round(v * 10))])),
+    games: st.games, goals: st.goals, assists: st.assists, mvp: st.mvp
+  };
+}
+function cardRoundRect(ctx, x, y, w, h, rad) {
+  ctx.beginPath();
+  ctx.moveTo(x + rad, y); ctx.arcTo(x + w, y, x + w, y + h, rad); ctx.arcTo(x + w, y + h, x, y + h, rad);
+  ctx.arcTo(x, y + h, x, y, rad); ctx.arcTo(x, y, x + w, y, rad); ctx.closePath();
+}
+function cardLoadImage(src) {
+  return new Promise(res => { if (!src) return res(null); const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
+}
+async function cardCanvas(c) {
+  try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (e) {}
+  const W = 720, H = 1000, T = CARD_TIERS[c.tier];
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const x = cv.getContext('2d');
+  const F = 'Bricolage Grotesque, DM Sans, Arial, sans-serif';
+  // sfondo
+  const g = x.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, T.g[0]); g.addColorStop(0.5, T.g[1]); g.addColorStop(1, T.g[2]);
+  x.fillStyle = g; cardRoundRect(x, 0, 0, W, H, 70); x.fill();
+  // riflessi
+  x.save(); cardRoundRect(x, 0, 0, W, H, 70); x.clip();
+  x.fillStyle = 'rgba(255,255,255,.10)';
+  x.beginPath(); x.moveTo(-40, 380); x.lineTo(W + 40, 120); x.lineTo(W + 40, 300); x.lineTo(-40, 560); x.closePath(); x.fill();
+  x.fillStyle = 'rgba(0,0,0,.06)';
+  x.beginPath(); x.arc(W * 0.85, H * 0.78, 300, 0, 7); x.fill();
+  x.restore();
+  x.strokeStyle = T.line; x.lineWidth = 4; cardRoundRect(x, 18, 18, W - 36, H - 36, 56); x.stroke();
+  // valore e ruolo
+  x.fillStyle = T.ink; x.textAlign = 'center';
+  x.font = `800 150px ${F}`; x.fillText(String(c.ovr), 150, 215);
+  x.font = `700 46px ${F}`; x.fillText(c.pos, 150, 272);
+  x.fillStyle = T.line; x.fillRect(92, 296, 116, 4);
+  x.fillStyle = T.ink; x.font = `700 22px ${F}`; x.fillText(T.label, 150, 336);
+  // foto
+  const px = 292, py = 92, pw = 370, ph = 388;
+  x.save(); cardRoundRect(x, px, py, pw, ph, 36); x.clip();
+  const img = await cardLoadImage(avatarSrc(c.id));
+  if (img) {
+    const sc = Math.max(pw / img.width, ph / img.height);
+    const iw = img.width * sc, ih = img.height * sc;
+    x.drawImage(img, px + (pw - iw) / 2, py + (ph - ih) * 0.2, iw, ih);
+  } else {
+    x.fillStyle = avatarColor(c.id); x.fillRect(px, py, pw, ph);
+    x.fillStyle = 'rgba(255,255,255,.92)'; x.font = `800 150px ${F}`;
+    x.fillText(c.name.trim().slice(0, 2).toUpperCase(), px + pw / 2, py + ph / 2 + 52);
+  }
+  const fade = x.createLinearGradient(0, py + ph - 110, 0, py + ph);
+  fade.addColorStop(0, 'rgba(0,0,0,0)'); fade.addColorStop(1, 'rgba(0,0,0,.28)');
+  x.fillStyle = fade; x.fillRect(px, py + ph - 110, pw, 110);
+  x.restore();
+  x.strokeStyle = T.line; x.lineWidth = 4; cardRoundRect(x, px, py, pw, ph, 36); x.stroke();
+  // nome
+  x.fillStyle = T.ink; x.textAlign = 'center';
+  let fs = 66; const nm = c.name.toUpperCase();
+  do { x.font = `800 ${fs}px ${F}`; fs -= 2; } while (x.measureText(nm).width > 580 && fs > 28);
+  x.fillText(nm, W / 2, 572);
+  x.fillStyle = T.line; x.fillRect(110, 596, W - 220, 4);
+  // attributi
+  const order = [['TIR', 'Tiro'], ['PAS', 'Passaggio'], ['DRI', 'Dribbling'], ['DIF', 'Difesa'], ['FIS', 'Fisico'], ['MEN', 'Mentalità']];
+  order.forEach(([k, lab], i) => {
+    const col = i < 3 ? 0 : 1, row = i % 3;
+    const bx = col === 0 ? 118 : 404, by = 672 + row * 82;
+    x.textAlign = 'left';
+    x.font = `800 58px ${F}`; x.fillStyle = T.ink; x.fillText(String(c.attrs[k]), bx, by);
+    const lx = bx + Math.max(92, x.measureText(String(c.attrs[k])).width + 18);
+    x.font = `700 28px ${F}`; x.fillText(k, lx, by - 4);
+    x.font = `500 18px ${F}`; x.globalAlpha = 0.75; x.fillText(lab, lx, by + 20); x.globalAlpha = 1;
+  });
+  // statistiche
+  x.textAlign = 'center'; x.fillStyle = T.ink;
+  x.font = `700 26px ${F}`;
+  x.fillText(`${c.games} PRES  ·  ${c.goals} GOL  ·  ${c.assists} ASS  ·  ${c.mvp} MVP`, W / 2, 920);
+  x.font = `600 18px ${F}`; x.globalAlpha = 0.7;
+  x.fillText('SQUADRE EQUILIBRATE  ·  #MATCHDAY', W / 2, 956); x.globalAlpha = 1;
+  return cv;
+}
+let cardLast = null;
+async function cardRenderInto(id) {
+  const box = document.getElementById('pm-card');
+  if (!box) return;
+  box.innerHTML = '<p class="empty-note">Preparo la carta…</p>';
+  const c = await cardCompute(id);
+  if (!c || playerModalId !== id) return;
+  const cv = await cardCanvas(c);
+  if (playerModalId !== id) return;
+  cardLast = { id, c, url: cv.toDataURL('image/png') };
+  box.innerHTML = `<img src="${cardLast.url}" alt="Carta di ${escapeHtml(c.name)}">
+    <p class="hint" style="margin:6px 0 0;">Valore ${c.ovr} · ${CARD_TIERS[c.tier].label.toLowerCase()}. Cambia dopo ogni partita e con i voti.</p>
+    <div class="pm-actions"><button type="button" class="btn-primary" onclick="cardShare()">Condividi carta</button></div>`;
+}
+async function cardShare() {
+  if (!cardLast) return;
+  const blob = await (await fetch(cardLast.url)).blob();
+  const fname = 'carta-' + cardLast.c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.png';
+  const file = new File([blob], fname, { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: 'Carta ' + cardLast.c.name }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = fname;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+// ---- Simulatore "e se?": probabilità di vittoria di due squadre scelte a piacere ----
+let simState = {};   // id giocatore -> 'A' | 'B'
+function simStrength(ids) {
+  const list = ids.map(id => roster.find(p => p.id === id)).filter(Boolean);
+  return list.length ? list.reduce((t, p) => t + totalScore(p), 0) / list.length : 6;
+}
+function simHistory() {
+  let totGoals = 0, played = 0;
+  const st = {};
+  matches.forEach(m => {
+    const has = matchHasResult(m);
+    const ents = m.entries || {};
+    if (has) { played++; totGoals += Object.values(ents).reduce((t, e) => t + ((e && e.goals) || 0) + ((e && e.og) || 0), 0); }
+    [...(m.teamA || []), ...(m.teamB || [])].forEach(pl => {
+      const o = st[pl.id] || (st[pl.id] = { games: 0, goals: 0 });
+      if (has) { o.games++; o.goals += (ents[pl.id] && ents[pl.id].goals) || 0; }
+    });
+  });
+  return { mu: played >= 2 ? totGoals / played : 8, st, played };
+}
+function simProbs(sA, sB, mu) {
+  const share = 1 / (1 + Math.exp(-0.45 * (sA - sB)));
+  const muA = mu * share, muB = mu * (1 - share), N = 22;
+  const pmf = lam => { const r = [Math.exp(-lam)]; for (let k = 1; k <= N; k++) r.push(r[k - 1] * lam / k); return r; };
+  const PA = pmf(muA), PB = pmf(muB);
+  let pA = 0, pD = 0, pB = 0, norm = 0;
+  const scores = [];
+  for (let i = 0; i <= N; i++) for (let j = 0; j <= N; j++) {
+    const q = PA[i] * PB[j]; norm += q; scores.push({ i, j, q });
+    if (i > j) pA += q; else if (i === j) pD += q; else pB += q;
+  }
+  scores.forEach(e => { e.q /= norm; });
+  return { pA: pA / norm, pD: pD / norm, pB: pB / norm, muA, muB, scores };
+}
+function simTeams() {
+  const A = [], B = [];
+  roster.forEach(p => { if (simState[p.id] === 'A') A.push(p.id); else if (simState[p.id] === 'B') B.push(p.id); });
+  return { A, B };
+}
+function simFromCurrent(silent) {
+  simState = {};
+  if (currentTeams) {
+    currentTeams.teamA.forEach(p => { simState[p.id] = 'A'; });
+    currentTeams.teamB.forEach(p => { simState[p.id] = 'B'; });
+  }
+  renderSim();
+}
+function simClear() { simState = {}; renderSim(); }
+function simToggle(id) {
+  const cur = simState[id];
+  if (!cur) simState[id] = 'A'; else if (cur === 'A') simState[id] = 'B'; else delete simState[id];
+  renderSim();
+}
+function simMove(aId, bId) {
+  simState[aId] = 'B'; simState[bId] = 'A';
+  renderSim();
+}
+function simApply() {
+  if (isVoteOnlyMode) return;
+  const { A, B } = simTeams();
+  if (!A.length || !B.length) return;
+  const mk = id => { const p = roster.find(x => x.id === id); return { id: p.id, name: p.name, roleKey: (ROLES.find(r => r.id === (p.role || DEFAULT_ROLE)) || {}).macro || 'centrocampista', role: p.role || DEFAULT_ROLE, score: totalScore(p) }; };
+  currentTeams = { teamA: A.map(mk), teamB: B.map(mk) };
+  swapSelection = null;
+  renderTeams();
+  const rs = document.getElementById('result-section');
+  rs.style.display = 'block';
+  expandSection(rs);
+  rs.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function simPoisson(lam) { const L = Math.exp(-lam); let k = 0, p = 1; do { k++; p *= Math.random(); } while (p > L); return k - 1; }
+function simPick(ids, weights) {
+  const tot = weights.reduce((t, w) => t + w, 0);
+  let r = Math.random() * tot;
+  for (let i = 0; i < ids.length; i++) { r -= weights[i]; if (r <= 0) return ids[i]; }
+  return ids[ids.length - 1];
+}
+function simPlayOne() {
+  const { A, B } = simTeams();
+  const box = document.getElementById('sim-match');
+  if (!box || !A.length || !B.length) return;
+  const h = simHistory();
+  const pr = simProbs(simStrength(A), simStrength(B), h.mu);
+  const gA = simPoisson(pr.muA), gB = simPoisson(pr.muB);
+  const rate = id => { const o = h.st[id] || { games: 0, goals: 0 }; return (o.goals + 0.35) / (o.games + 1); };
+  const nm = id => (roster.find(p => p.id === id) || {}).name || '—';
+  const goals = [];
+  for (let i = 0; i < gA; i++) goals.push({ t: 'A', who: simPick(A, A.map(rate)) });
+  for (let i = 0; i < gB; i++) goals.push({ t: 'B', who: simPick(B, B.map(rate)) });
+  goals.forEach(g => { g.min = 1 + Math.floor(Math.random() * 60); });
+  goals.sort((a, b) => a.min - b.min);
+  let ca = 0, cb = 0;
+  const lines = goals.map(g => { if (g.t === 'A') ca++; else cb++; return `<div class="sim-row"><span>${g.min}' · ${escapeHtml(nm(g.who))}</span><span><strong>${ca}-${cb}</strong></span></div>`; }).join('');
+  const nA = teamMeta.names.A, nB = teamMeta.names.B;
+  const verdict = gA > gB ? `Vince ${escapeHtml(nA)}` : gB > gA ? `Vince ${escapeHtml(nB)}` : 'Pareggio';
+  box.innerHTML = `<div class="sim-title">Una partita simulata: ${escapeHtml(nA)} ${gA} - ${gB} ${escapeHtml(nB)} · ${verdict}</div>${lines || '<p class="empty-note">Nessun gol: 0-0.</p>'}<p class="hint">È una sola partita estratta a caso dal modello: rilanciala e il risultato cambia.</p>`;
+}
+function renderSim() {
+  const chips = document.getElementById('sim-chips');
+  const out = document.getElementById('sim-out');
+  if (!chips || !out) return;
+  const sec = document.getElementById('sim-section');
+  sec.style.setProperty('--sim-a', teamMeta.colors.A);
+  sec.style.setProperty('--sim-b', teamMeta.colors.B);
+  const useBtn = document.getElementById('sim-use-btn');
+  if (useBtn) useBtn.disabled = !currentTeams;
+  if (roster.length === 0) { chips.innerHTML = ''; out.innerHTML = '<p class="empty-note">Aggiungi prima i giocatori nella rosa.</p>'; return; }
+  chips.innerHTML = roster.map(p => {
+    const st = simState[p.id] || '';
+    return `<button type="button" class="sim-chip" data-st="${st}" onclick="simToggle('${p.id}')"><span>${escapeHtml(p.name)}</span><small>${st ? 'SQ. ' + st : 'fuori'}</small></button>`;
+  }).join('');
+  const { A, B } = simTeams();
+  if (!A.length || !B.length) { out.innerHTML = '<p class="empty-note">Metti almeno un giocatore per squadra per vedere le probabilità.</p>'; return; }
+  const h = simHistory();
+  const sA = simStrength(A), sB = simStrength(B);
+  const pr = simProbs(sA, sB, h.mu);
+  const nA = escapeHtml(teamMeta.names.A), nB = escapeHtml(teamMeta.names.B);
+  const pc = q => Math.round(q * 100);
+  const diff = Math.abs(pr.pA - pr.pB);
+  const label = diff < 0.06 ? 'Partita molto equilibrata' : diff < 0.16 ? 'Partita abbastanza equilibrata' : diff < 0.3 ? 'Favorita una squadra' : 'Partita sbilanciata';
+  const top = pr.scores.slice().sort((u, v) => v.q - u.q).slice(0, 5);
+  // scambi: ogni giocatore di A con ogni giocatore di B, ordinati per quanto riducono lo squilibrio
+  const sumA = A.reduce((t, id) => t + totalScore(roster.find(p => p.id === id)), 0);
+  const sumB = B.reduce((t, id) => t + totalScore(roster.find(p => p.id === id)), 0);
+  const swaps = [];
+  A.forEach(a => B.forEach(b => {
+    const ta = totalScore(roster.find(p => p.id === a)), tb = totalScore(roster.find(p => p.id === b));
+    const nsA = (sumA - ta + tb) / A.length, nsB = (sumB - tb + ta) / B.length;
+    const q = simProbs(nsA, nsB, h.mu);
+    swaps.push({ a, b, q, gap: Math.abs(q.pA - q.pB) });
+  }));
+  swaps.sort((u, v) => u.gap - v.gap);
+  const better = swaps.filter(x => x.gap < diff - 0.005).slice(0, 3);
+  const nm = id => escapeHtml((roster.find(p => p.id === id) || {}).name || '—');
+  const sizeNote = A.length !== B.length ? `<p class="hint" style="color:var(--danger);">Attenzione: ${A.length} contro ${B.length} giocatori. Il modello confronta la forza media delle squadre e non tiene conto del numero in più.</p>` : '';
+  out.innerHTML = `
+    <div class="sim-title" style="margin-top:6px;">${label}</div>
+    <div class="sim-bar">
+      <div style="background:${teamMeta.colors.A}; width:${pr.pA * 100}%;">${pc(pr.pA)}%</div>
+      <div style="background:#7b8499; width:${pr.pD * 100}%;">${pc(pr.pD)}%</div>
+      <div style="background:${teamMeta.colors.B}; width:${pr.pB * 100}%;">${pc(pr.pB)}%</div>
+    </div>
+    <div class="sim-legend"><span>${nA} vince</span><span>Pareggio</span><span>${nB} vince</span></div>
+    <div class="sim-row" style="margin-top:12px;"><span>Gol attesi</span><span><strong>${pr.muA.toFixed(1)}</strong> - <strong>${pr.muB.toFixed(1)}</strong></span></div>
+    <div class="sim-row"><span>Forza media (punteggio tecnico)</span><span><strong>${sA.toFixed(2)}</strong> - <strong>${sB.toFixed(2)}</strong></span></div>
+    ${sizeNote}
+    <div class="sim-title">Risultati più probabili</div>
+    ${top.map(e => `<div class="sim-row"><span>${e.i} - ${e.j}</span><span>${(e.q * 100).toFixed(1)}%</span></div>`).join('')}
+    <div class="sim-title">Scambi che equilibrano la partita</div>
+    ${better.length ? better.map(x => `<div class="sim-swap"><span><strong>${nm(x.a)}</strong> ⇄ <strong>${nm(x.b)}</strong><br><small>${nA} ${pc(x.q.pA)}% · pareggio ${pc(x.q.pD)}% · ${nB} ${pc(x.q.pB)}%</small></span><button type="button" class="btn-ghost" onclick="simMove('${x.a}','${x.b}')">Prova</button></div>`).join('') : '<p class="empty-note">Nessuno scambio migliora l\'equilibrio: le squadre sono già ben bilanciate.</p>'}
+    <div class="row wrap-row" style="gap:8px; margin-top:14px;">
+      <button type="button" class="btn-ghost" onclick="simPlayOne()">Simula una partita</button>
+      ${isVoteOnlyMode ? '' : '<button type="button" class="btn-primary" onclick="simApply()">Applica queste squadre</button>'}
+    </div>
+    <div id="sim-match"></div>
+    <p class="hint" style="margin-top:12px;">Come si calcola: la forza di ogni squadra è la media dei punteggi tecnici dei suoi giocatori; la differenza decide come si dividono i gol totali tipici (${h.mu.toFixed(1)} a partita${h.played >= 2 ? ', dalle partite giocate' : ', valore di partenza finché hai meno di 2 partite con risultato'}), e da lì si ricavano tutte le probabilità.</p>`;
 }
 let overallPerfUnsubscribe = null;
 function computeOverallPerformance(voteDocs) {
@@ -3586,6 +3108,7 @@ document.addEventListener('click', e => {
   const target = id === 'top' ? document.body : document.getElementById(id);
   if (!target) return;
   e.preventDefault();
+  expandSection(target);
   const nav = document.querySelector('.topbar');
   const offset = nav ? nav.offsetHeight + 12 : 12;
   const y = id === 'top' ? 0 : target.getBoundingClientRect().top + window.pageYOffset - offset;
@@ -3598,7 +3121,7 @@ document.addEventListener('click', e => {
 // ---- Barra di navigazione: mostra solo le sezioni visibili ----
 const NAV_ITEMS = [
   ['roster-section','Rosa'],['weights-section','Pesi'],['match-section','Partita'],['result-section','Squadre'],
-  ['pitch-section','Campo'],['poster-section','Locandina'],['stats-section','Marcatori'],['rankings-section','Classifiche'],['odds-section','Quotazioni'],
+  ['pitch-section','Campo'],['sim-section','Simulatore'],['stats-section','Marcatori'],['rankings-section','Classifiche'],
   ['performance-section','Media voti'],['suggestions-section','Suggerimenti'],['history-section','Storico'],['vote-section','Vota']
 ];
 let navTimer = null, navObserver = null;
@@ -3632,9 +3155,61 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 let isVoteOnlyMode = false;
+// ---- Sezioni comprimibili: tocca il titolo per nascondere o mostrare il contenuto ----
+function collapseKey() { return 'squadre-collapsed-v1-' + (location.pathname.split('/').pop() || 'index') + (isVoteOnlyMode ? '-vota' : ''); }
+function collapsibleSections() { return Array.from(document.querySelectorAll('section.card')).filter(sec => sec.querySelector(':scope > h2')); }
+function setCollapsed(sec, on) {
+  sec.classList.toggle('collapsed', on);
+  const h = sec.querySelector(':scope > h2');
+  if (h) h.setAttribute('aria-expanded', String(!on));
+}
+function saveCollapsed() {
+  try { localStorage.setItem(collapseKey(), JSON.stringify(collapsibleSections().filter(s => s.classList.contains('collapsed')).map(s => s.id))); } catch (e) {}
+}
+function expandSection(sec) {
+  if (sec && sec.classList && sec.classList.contains('collapsed')) { setCollapsed(sec, false); saveCollapsed(); }
+}
+function setAllCollapsed(on) {
+  collapsibleSections().forEach(sec => { if (sec.style.display !== 'none') setCollapsed(sec, on); });
+  saveCollapsed();
+}
+function initCollapsible() {
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem(collapseKey()) || '[]'); } catch (e) {}
+  collapsibleSections().forEach(sec => {
+    const h = sec.querySelector(':scope > h2');
+    h.setAttribute('role', 'button');
+    h.setAttribute('tabindex', '0');
+    setCollapsed(sec, saved.includes(sec.id));
+  });
+  const wrap = document.querySelector('.wrap');
+  if (wrap && !document.getElementById('sec-tools')) {
+    const bar = document.createElement('div');
+    bar.className = 'sec-tools';
+    bar.id = 'sec-tools';
+    bar.innerHTML = '<span>Sezioni:</span><button type="button" class="btn-ghost" onclick="setAllCollapsed(true)">Chiudi tutte</button><button type="button" class="btn-ghost" onclick="setAllCollapsed(false)">Apri tutte</button>';
+    wrap.insertBefore(bar, wrap.firstChild);
+  }
+}
+document.addEventListener('click', e => {
+  const h = e.target.closest('section.card > h2');
+  if (!h) return;
+  const sec = h.parentElement;
+  setCollapsed(sec, !sec.classList.contains('collapsed'));
+  saveCollapsed();
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const h = e.target.closest && e.target.closest('section.card > h2');
+  if (!h || e.target !== h) return;
+  e.preventDefault();
+  h.click();
+});
+document.addEventListener('DOMContentLoaded', initCollapsible);
+
 function applyVoteOnlyMode() {
   isVoteOnlyMode = true;
-  const visibleIds = ['rankings-section', 'odds-section', 'performance-section', 'history-section', 'vote-section'];
+  const visibleIds = ['rankings-section', 'performance-section', 'history-section', 'vote-section'];
   document.querySelectorAll('section.card').forEach(sec => {
     if (!visibleIds.includes(sec.id)) sec.style.display = 'none';
   });
@@ -3693,7 +3268,6 @@ initSync().finally(() => {
   updateVoteModeNote();
 });
 </script>
-<div id="slip-print" aria-hidden="true"></div>
 <div id="player-modal" class="pmodal" hidden onclick="if (event.target === this) closePlayer()">
   <div class="pmodal-box" role="dialog" aria-modal="true" aria-label="Scheda giocatore" id="player-modal-box"></div>
 </div>
