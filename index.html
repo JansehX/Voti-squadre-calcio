@@ -268,6 +268,17 @@ button.sim-chip[data-st="B"] { background: var(--sim-b); color: #fff; }
 .sim-swap { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); margin-bottom: 6px; font-size: 14px; flex-wrap: wrap; }
 .sim-swap button { padding: 7px 14px; font-size: 13px; }
 .sim-title { font-weight: 700; font-size: 14.5px; margin: 18px 0 8px; }
+
+/* ---- Elo e chimica di coppia ---- */
+.elo-chip { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 999px; border: 1px solid currentColor; margin-left: 6px; vertical-align: middle; }
+.elo-chip.over { color: var(--danger); }
+.elo-chip.under { color: var(--accent); }
+.elo-chip.prov { color: var(--gold); }
+.chem-sub { font-weight: 700; font-size: 14.5px; margin: 18px 0 8px; }
+.chem-sub:first-child { margin-top: 0; }
+.chem-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 12px; background: var(--surface-2); margin-bottom: 6px; font-size: 14px; flex-wrap: wrap; }
+.chem-row small { color: var(--text-secondary); }
+.formula { font-family: "DM Sans", sans-serif; background: var(--surface-2); border-radius: 10px; padding: 10px 12px; margin: 8px 0; font-size: 14px; overflow-x: auto; }
 </style>
 </head>
 <body>
@@ -429,6 +440,25 @@ button.sim-chip[data-st="B"] { background: var(--sim-b); color: #fff; }
         <div id="ranking-owngoals"></div>
       </div>
     </div>
+  </section>
+
+  <section class="card" id="elo-section">
+    <h2><span class="step-num">E</span>Classifica Elo</h2>
+    <p class="hint">Un punteggio basato solo sui risultati reali: ogni partita lo sposta in su o in giù per tutti i giocatori in campo, di più se vincere era improbabile. Parti tutti da 1000.</p>
+    <div id="elo-list"></div>
+    <details style="margin-top:10px;">
+      <summary style="cursor:pointer; font-weight:600;">Come funziona</summary>
+      <p class="hint" style="margin-top:8px;">La forza di una squadra è la media dei punteggi dei suoi giocatori. La probabilità attesa che la squadra A batta la B dipende dalla differenza:</p>
+      <div class="formula">E<sub>A</sub> = 1 / (1 + 10<sup>(R<sub>B</sub> − R<sub>A</sub>) / 400</sup>)</div>
+      <p class="hint">Dopo la partita, ogni giocatore di A cambia di:</p>
+      <div class="formula">ΔR = K · G · (S − E<sub>A</sub>)</div>
+      <p class="hint">con K = 32 (quanto pesa una partita), S = 1 se vince, ½ se pareggia, 0 se perde, e G che premia le vittorie larghe (1 fino a 1 gol di scarto, 1,5 con 2 gol, (11 + scarto) / 8 da 3 in su). I giocatori dell'altra squadra cambiano della stessa quantità con segno opposto. Esempio: se vinci una partita che avevi il 50% di probabilità di vincere con 1 gol di scarto, guadagni 32 · 1 · (1 − 0,5) = 16 punti. Chi ha giocato meno di 3 partite è "provvisorio".</p>
+    </details>
+  </section>
+
+  <section class="card" id="chem-section">
+    <h2><span class="step-num">C</span>Chimica di coppia e rivalità</h2>
+    <div id="chem-content"></div>
   </section>
 
   <section class="card" id="performance-section">
@@ -643,6 +673,8 @@ function renderAll() {
   updateSaveButtonState();
   subscribeOverallPerformance();
   renderSim();
+  renderElo();
+  renderChem();
 }
 async function initSync() {
   let dbCap = null;
@@ -1232,6 +1264,7 @@ function addToTeam() {
 }
 
 // Foto caricate in passato dalla vecchia sezione Locandina: restano come ripiego per le carte e le schede
+let historyOpenId = null;
 const PHOTOS_KEY = 'squadre-photos-v1';
 const legacyPhotos = (() => { try { return JSON.parse(localStorage.getItem(PHOTOS_KEY) || '{}'); } catch (e) { return {}; } })();
 
@@ -1756,7 +1789,7 @@ function renderHistory() {
       </div>`;
     }).join('') : '<p class="empty-note" style="padding:2px 0;">Nessun giocatore registrato.</p>';
     return `
-      <details class="player" data-id="${m.id}">
+      <details class="player" data-id="${m.id}" ${historyOpenId === m.id ? 'open' : ''}>
         <summary>
           <span class="player-name">${dateStr}</span>
           <span class="row" style="gap:10px;">
@@ -2448,6 +2481,7 @@ function openPlayer(id) {
       <div class="pm-stat"><b>${gpm}</b><span>Gol / partita</span></div>
     </div>
     <div class="pm-match"><span>Risultati di squadra</span><span><strong>${st.w}</strong> V · <strong>${st.d}</strong> N · <strong>${st.l}</strong> P${st.res ? ` · ${Math.round(st.w / st.res * 100)}% vittorie` : ''}</span></div>
+    ${playerRelHtml(id)}
     <div id="pm-perf"><div class="pm-sec">Prestazione</div><p class="empty-note">Caricamento voti…</p></div>
     <div class="pm-sec">Ultime partite</div>
     ${last.length ? last.map(pm => {
@@ -2798,6 +2832,7 @@ function renderSim() {
     ${sizeNote}
     <div class="sim-title">Risultati più probabili</div>
     ${top.map(e => `<div class="sim-row"><span>${e.i} - ${e.j}</span><span>${(e.q * 100).toFixed(1)}%</span></div>`).join('')}
+    ${simChemHtml(A, B)}
     <div class="sim-title">Scambi che equilibrano la partita</div>
     ${better.length ? better.map(x => `<div class="sim-swap"><span><strong>${nm(x.a)}</strong> ⇄ <strong>${nm(x.b)}</strong><br><small>${nA} ${pc(x.q.pA)}% · pareggio ${pc(x.q.pD)}% · ${nB} ${pc(x.q.pB)}%</small></span><button type="button" class="btn-ghost" onclick="simMove('${x.a}','${x.b}')">Prova</button></div>`).join('') : '<p class="empty-note">Nessuno scambio migliora l\'equilibrio: le squadre sono già ben bilanciate.</p>'}
     <div class="row wrap-row" style="gap:8px; margin-top:14px;">
@@ -2806,6 +2841,154 @@ function renderSim() {
     </div>
     <div id="sim-match"></div>
     <p class="hint" style="margin-top:12px;">Come si calcola: la forza di ogni squadra è la media dei punteggi tecnici dei suoi giocatori; la differenza decide come si dividono i gol totali tipici (${h.mu.toFixed(1)} a partita${h.played >= 2 ? ', dalle partite giocate' : ', valore di partenza finché hai meno di 2 partite con risultato'}), e da lì si ricavano tutte le probabilità.</p>`;
+}
+// ---- Elo, chimica di coppia e rivalità: tutto calcolato dalle partite salvate ----
+const ELO_START = 1000, ELO_K = 32, ELO_PROVISIONAL = 3;
+let perfStatsCache = {};
+function eloCalc() {
+  const R = {}, games = {}, last = {};
+  matches.filter(matchHasResult).sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(m => {
+    const A = m.teamA || [], B = m.teamB || [];
+    if (!A.length || !B.length) return;
+    const sc = pmScore(m);
+    const r = id => (id in R ? R[id] : ELO_START);
+    const mean = L => L.reduce((t, p) => t + r(p.id), 0) / L.length;
+    const E = 1 / (1 + Math.pow(10, (mean(B) - mean(A)) / 400));
+    const S = sc.a > sc.b ? 1 : sc.a < sc.b ? 0 : 0.5;
+    const gd = Math.abs(sc.a - sc.b);
+    const G = gd <= 1 ? 1 : gd === 2 ? 1.5 : (11 + gd) / 8;
+    const d = ELO_K * G * (S - E);
+    A.forEach(p => { R[p.id] = r(p.id) + d; games[p.id] = (games[p.id] || 0) + 1; last[p.id] = d; });
+    B.forEach(p => { R[p.id] = r(p.id) - d; games[p.id] = (games[p.id] || 0) + 1; last[p.id] = -d; });
+  });
+  return Object.keys(R).map(id => ({ id, name: playerNameOf(id), elo: R[id], games: games[id], last: last[id] }))
+    .sort((a, b) => b.elo - a.elo);
+}
+function renderElo() {
+  const box = document.getElementById('elo-list');
+  if (!box) return;
+  const rows = eloCalc();
+  if (rows.length === 0) { box.innerHTML = '<p class="empty-note">Serve almeno una partita con risultato per calcolare l\'Elo.</p>'; return; }
+  // percezione: posizione per voti degli amici contro posizione per risultati (solo admin)
+  const tag = {};
+  if (!isVoteOnlyMode) {
+    const el = rows.filter(r => r.games >= ELO_PROVISIONAL && perfStatsCache[r.id] && perfStatsCache[r.id].count >= PROVISIONAL_BELOW);
+    if (el.length >= 4) {
+      const byElo = el.slice().sort((a, b) => b.elo - a.elo).map(r => r.id);
+      const byPerf = el.slice().sort((a, b) => perfStatsCache[b.id].weighted - perfStatsCache[a.id].weighted).map(r => r.id);
+      const gap = Math.max(2, Math.round(el.length / 4));
+      el.forEach(r => {
+        const d = byElo.indexOf(r.id) - byPerf.indexOf(r.id); // positivo: i voti lo mettono più in alto dei risultati
+        if (d >= gap) tag[r.id] = 'over'; else if (d <= -gap) tag[r.id] = 'under';
+      });
+    }
+  }
+  box.innerHTML = rows.map((r, i) => {
+    const up = r.last >= 0;
+    const chip = r.games < ELO_PROVISIONAL ? '<span class="elo-chip prov">provvisorio</span>'
+      : tag[r.id] === 'over' ? '<span class="elo-chip over" title="I voti degli amici lo mettono più in alto di quanto dicano i risultati">sopravvalutato</span>'
+      : tag[r.id] === 'under' ? '<span class="elo-chip under" title="I risultati lo mettono più in alto di quanto dicano i voti degli amici">sottovalutato</span>' : '';
+    return `<div class="team-card" style="cursor:default;">
+      <span>${i + 1}. ${pnameHtml(r.id, r.name)}${chip}</span>
+      <span><strong>${Math.round(r.elo)}</strong> <span style="color:${up ? 'var(--accent)' : 'var(--danger)'}; font-size:12px;">${up ? '▲' : '▼'} ${Math.abs(Math.round(r.last))}</span> <span style="color:var(--text-muted); font-size:11px;">· ${r.games} ${r.games === 1 ? 'partita' : 'partite'}</span></span>
+    </div>`;
+  }).join('') + (isVoteOnlyMode ? '' : '<p class="hint" style="margin-top:8px;">"Sopravvalutato" e "sottovalutato" (visibili solo a te) confrontano la posizione per Elo con quella per media dei voti degli amici, tra chi ha almeno 3 partite e abbastanza voti.</p>');
+}
+function pairData() {
+  const played = matches.filter(matchHasResult);
+  const minG = played.length >= 8 ? 3 : 2;
+  const tog = {}, vs = {};
+  played.forEach(m => {
+    const sc = pmScore(m);
+    const res = sc.a > sc.b ? 'A' : sc.a < sc.b ? 'B' : 'D';
+    const A = (m.teamA || []).map(p => p.id), B = (m.teamB || []).map(p => p.id);
+    [['A', A], ['B', B]].forEach(([t, L]) => {
+      for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) {
+        const [x, y] = L[i] < L[j] ? [L[i], L[j]] : [L[j], L[i]];
+        const k = x + '|' + y;
+        const o = tog[k] || (tog[k] = { a: x, b: y, w: 0, d: 0, l: 0, g: 0 });
+        o.g++;
+        if (res === 'D') o.d++; else if (res === t) o.w++; else o.l++;
+      }
+    });
+    A.forEach(i => B.forEach(j => {
+      const first = i < j ? i : j, second = i < j ? j : i;
+      const firstInA = first === i;
+      const k = first + '|' + second;
+      const o = vs[k] || (vs[k] = { a: first, b: second, w: 0, d: 0, l: 0, g: 0 });
+      o.g++;
+      if (res === 'D') o.d++; else if ((res === 'A') === firstInA) o.w++; else o.l++;
+    }));
+  });
+  const sm = o => (o.w + 0.5 * o.d + 1) / (o.g + 2);
+  Object.values(tog).forEach(o => { o.rate = sm(o); });
+  return { minG, tog, vs };
+}
+function chemRecord(o) { return `${o.w}V ${o.d}N ${o.l}P`; }
+function renderChem() {
+  const box = document.getElementById('chem-content');
+  if (!box) return;
+  const { minG, tog, vs } = pairData();
+  const nm = id => escapeHtml(playerNameOf(id));
+  const pairs = Object.values(tog).filter(o => o.g >= minG);
+  const rivals = Object.values(vs).filter(o => o.g >= minG && o.w !== o.l);
+  if (pairs.length === 0 && rivals.length === 0) {
+    box.innerHTML = `<p class="empty-note">Servono almeno ${minG} partite con risultato giocate insieme (o una contro l'altra) per vedere le coppie.</p>`;
+    return;
+  }
+  const best = pairs.filter(o => o.rate > 0.5).sort((x, y) => y.rate - x.rate || y.g - x.g).slice(0, 5);
+  const worst = pairs.filter(o => o.rate < 0.5).sort((x, y) => x.rate - y.rate || y.g - x.g).slice(0, 3);
+  const riv = rivals.sort((x, y) => Math.abs(y.w - y.l) - Math.abs(x.w - x.l) || y.g - x.g).slice(0, 5);
+  const pairRow = o => `<div class="chem-row"><span>${nm(o.a)} + ${nm(o.b)}</span><span><strong>${Math.round(o.rate * 100)}%</strong> <small>${chemRecord(o)} · ${o.g} partite</small></span></div>`;
+  box.innerHTML = `
+    <p class="hint">Calcolato dalle partite con risultato (almeno ${minG} partite per comparire). La percentuale è corretta per i pochi dati: parte da 50% e si sposta con le partite.</p>
+    <div class="chem-sub">Coppie d'oro (giocano nella stessa squadra)</div>
+    ${best.length ? best.map(pairRow).join('') : '<p class="empty-note">Ancora nessuna coppia sopra il 50%.</p>'}
+    <div class="chem-sub">Coppie da evitare</div>
+    ${worst.length ? worst.map(pairRow).join('') : '<p class="empty-note">Nessuna coppia sotto il 50%.</p>'}
+    <div class="chem-sub">Rivalità (uno contro l'altro)</div>
+    ${riv.length ? riv.map(o => {
+      const dom = o.w > o.l ? o.a : o.b, sub = o.w > o.l ? o.b : o.a;
+      const W = Math.max(o.w, o.l), L = Math.min(o.w, o.l);
+      return `<div class="chem-row"><span><strong>${nm(dom)}</strong> domina ${nm(sub)}</span><span><small>${W}-${L}${o.d ? ' · ' + o.d + (o.d === 1 ? ' pari' : ' pari') : ''} · ${o.g} sfide</small></span></div>`;
+    }).join('') : '<p class="empty-note">Nessuna rivalità a senso unico per ora.</p>'}`;
+}
+// righe per la scheda giocatore: compagno ideale, bestia nera, vittima
+function playerRelHtml(id) {
+  const { minG, tog, vs } = pairData();
+  const other = o => (o.a === id ? o.b : o.a);
+  const nm = x => escapeHtml(playerNameOf(x));
+  const mine = Object.values(tog).filter(o => (o.a === id || o.b === id) && o.g >= minG);
+  const partner = mine.filter(o => o.rate > 0.5).sort((x, y) => y.rate - x.rate || y.g - x.g)[0];
+  const persp = o => (o.a === id ? { w: o.w, d: o.d, l: o.l } : { w: o.l, d: o.d, l: o.w });
+  const duels = Object.values(vs).filter(o => (o.a === id || o.b === id) && o.g >= minG).map(o => ({ o, p: persp(o) }));
+  const nemesis = duels.filter(x => x.p.l > x.p.w).sort((x, y) => (y.p.l - y.p.w) - (x.p.l - x.p.w))[0];
+  const victim = duels.filter(x => x.p.w > x.p.l).sort((x, y) => (y.p.w - y.p.l) - (x.p.w - x.p.l))[0];
+  const elo = eloCalc();
+  const e = elo.find(r => r.id === id);
+  const row = (a, b) => `<div class="pm-match"><span>${a}</span><span>${b}</span></div>`;
+  const out = [];
+  if (e) out.push(row('Elo', `<strong>${Math.round(e.elo)}</strong> · ${elo.indexOf(e) + 1}° su ${elo.length}${e.games < ELO_PROVISIONAL ? ' (provvisorio)' : ''}`));
+  if (partner) out.push(row('Compagno ideale', `<strong>${nm(other(partner))}</strong> · ${chemRecord(partner)}`));
+  if (nemesis) out.push(row('Bestia nera', `<strong>${nm(other(nemesis.o))}</strong> · ${nemesis.p.w}V ${nemesis.p.d}N ${nemesis.p.l}P contro`));
+  if (victim) out.push(row('Vittima preferita', `<strong>${nm(other(victim.o))}</strong> · ${victim.p.w}V ${victim.p.d}N ${victim.p.l}P contro`));
+  return out.length ? `<div class="pm-sec">Elo e coppie</div>${out.join('')}` : '';
+}
+// nel simulatore: coppie molto affiatate o poco felici dentro ciascuna squadra
+function simChemHtml(A, B) {
+  const { minG, tog } = pairData();
+  const nm = id => escapeHtml(playerNameOf(id));
+  const lines = [];
+  [['A', A], ['B', B]].forEach(([t, L]) => {
+    for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) {
+      const [x, y] = L[i] < L[j] ? [L[i], L[j]] : [L[j], L[i]];
+      const o = tog[x + '|' + y];
+      if (!o || o.g < minG) continue;
+      if (o.rate >= 0.65) lines.push(`<div class="sim-row"><span>🔥 ${nm(x)} + ${nm(y)} <small>(${escapeHtml(teamMeta.names[t])})</small></span><span>${Math.round(o.rate * 100)}% · ${chemRecord(o)}</span></div>`);
+      else if (o.rate <= 0.35) lines.push(`<div class="sim-row"><span>❄️ ${nm(x)} + ${nm(y)} <small>(${escapeHtml(teamMeta.names[t])})</small></span><span>${Math.round(o.rate * 100)}% · ${chemRecord(o)}</span></div>`);
+    }
+  });
+  return lines.length ? `<div class="sim-title">Affiatamento delle coppie</div>${lines.join('')}<p class="hint">🔥 coppia che ha vinto spesso insieme, ❄️ coppia che ha perso spesso. Non cambia le probabilità qui sopra, che si basano sui punteggi tecnici.</p>` : '';
 }
 let overallPerfUnsubscribe = null;
 function computeOverallPerformance(voteDocs) {
@@ -2843,6 +3026,8 @@ function renderOverallPerformance(totals) {
   const container = document.getElementById('ranking-performance');
   if (!container) return;
   const stats = weightedAverages(totals);
+  perfStatsCache = stats;
+  renderElo();
   const rows = roster.map(p => {
     const s = stats[p.id];
     if (!s) return null;
@@ -3121,7 +3306,7 @@ document.addEventListener('click', e => {
 // ---- Barra di navigazione: mostra solo le sezioni visibili ----
 const NAV_ITEMS = [
   ['roster-section','Rosa'],['weights-section','Pesi'],['match-section','Partita'],['result-section','Squadre'],
-  ['pitch-section','Campo'],['sim-section','Simulatore'],['stats-section','Marcatori'],['rankings-section','Classifiche'],
+  ['pitch-section','Campo'],['sim-section','Simulatore'],['stats-section','Marcatori'],['rankings-section','Classifiche'],['elo-section','Elo'],['chem-section','Coppie'],
   ['performance-section','Media voti'],['suggestions-section','Suggerimenti'],['history-section','Storico'],['vote-section','Vota']
 ];
 let navTimer = null, navObserver = null;
@@ -3210,7 +3395,7 @@ document.addEventListener('DOMContentLoaded', initCollapsible);
 function applyVoteOnlyMode() {
   if (window.location.hash.replace('#', '') !== 'vota=1') return;
   isVoteOnlyMode = true;
-  const visibleIds = ['rankings-section', 'performance-section', 'history-section', 'vote-section'];
+  const visibleIds = ['rankings-section', 'elo-section', 'chem-section', 'performance-section', 'history-section', 'vote-section'];
   document.querySelectorAll('section.card').forEach(sec => {
     if (!visibleIds.includes(sec.id)) sec.style.display = 'none';
   });
