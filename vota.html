@@ -279,6 +279,35 @@ button.sim-chip[data-st="B"] { background: var(--sim-b); color: #fff; }
 .chem-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 12px; background: var(--surface-2); margin-bottom: 6px; font-size: 14px; flex-wrap: wrap; }
 .chem-row small { color: var(--text-secondary); }
 .formula { font-family: "DM Sans", sans-serif; background: var(--surface-2); border-radius: 10px; padding: 10px 12px; margin: 8px 0; font-size: 14px; overflow-x: auto; }
+
+/* ---- Grafica dei dati: barre, medaglie, riquadro iniziale, grafico Elo ---- */
+.team-card.rk { position: relative; overflow: hidden; z-index: 0; align-items: center; }
+.rk-bar { position: absolute; left: 0; top: 0; bottom: 0; width: var(--w, 0%); background: linear-gradient(90deg, var(--accent-soft), transparent); z-index: -1; transform-origin: left; animation: rkIn .75s var(--d, 0ms) both cubic-bezier(.2,.8,.2,1); }
+.team-card.rk:first-child .rk-bar { background: linear-gradient(90deg, rgba(245,179,1,.38), transparent); }
+@keyframes rkIn { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.dash { max-width: 980px; margin: -64px auto 22px; position: relative; z-index: 2; }
+.dash-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.dash-tile { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 16px 16px 14px; box-shadow: 0 14px 30px -18px rgba(10,21,48,.45); position: relative; overflow: hidden; animation: tileIn .5s var(--d, 0ms) both ease-out; }
+.dash-tile.wide { grid-column: 1 / -1; background: linear-gradient(135deg, var(--nav-bg), #15318f); color: #fff; border-color: transparent; }
+.dash-ico { font-size: 22px; line-height: 1; margin-bottom: 8px; }
+.dash-label { font-size: 11.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--text-secondary); }
+.dash-tile.wide .dash-label { color: rgba(255,255,255,.72); }
+.dash-big { font-family: "Bricolage Grotesque", "DM Sans", sans-serif; font-size: 40px; font-weight: 800; line-height: 1.05; margin: 4px 0 2px; font-variant-numeric: tabular-nums; }
+.dash-tile.wide .dash-big { font-size: 46px; }
+.dash-sub { font-size: 13.5px; color: var(--text-secondary); font-weight: 600; word-break: break-word; }
+.dash-tile.wide .dash-sub { color: rgba(255,255,255,.85); }
+.dash-vs { display: flex; justify-content: space-between; gap: 10px; font-weight: 700; font-size: 14px; margin-top: 2px; }
+@keyframes tileIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (max-width: 719px) { .dash-tile:last-child:nth-child(even) { grid-column: 1 / -1; } }
+@media (min-width: 720px) { .dash-grid { grid-template-columns: repeat(3, 1fr); } .dash-tile.wide { grid-column: span 3; } .dash-big { font-size: 46px; } }
+@media (prefers-reduced-motion: reduce) { .rk-bar, .dash-tile { animation: none; } }
+#elo-chart { margin: 4px 0 14px; }
+#elo-chart svg { width: 100%; height: auto; display: block; }
+.elo-legend { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+button.elo-leg { border-radius: 999px; padding: 6px 11px; font-size: 12.5px; font-weight: 600; background: var(--surface-2); color: var(--text-secondary); border: 2px solid transparent; display: inline-flex; align-items: center; gap: 6px; }
+button.elo-leg i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); display: inline-block; opacity: .35; }
+button.elo-leg.on { color: var(--text); border-color: var(--c); }
+button.elo-leg.on i { opacity: 1; }
 </style>
 </head>
 <body>
@@ -302,6 +331,8 @@ button.sim-chip[data-st="B"] { background: var(--sim-b); color: #fff; }
   </div>
 </header>
 <div class="wrap">
+
+  <section class="dash" id="dash-section" aria-label="In breve"><div class="dash-grid" id="dash-grid"></div></section>
 
   <section class="card" id="roster-section">
     <h2><span class="step-num">1</span>Rosa giocatori</h2>
@@ -445,6 +476,7 @@ button.sim-chip[data-st="B"] { background: var(--sim-b); color: #fff; }
   <section class="card" id="elo-section">
     <h2><span class="step-num">E</span>Classifica Elo</h2>
     <p class="hint">Un punteggio basato solo sui risultati reali: ogni partita lo sposta in su o in giù per tutti i giocatori in campo, di più se vincere era improbabile. Parti tutti da 1000.</p>
+    <div id="elo-chart"></div>
     <div id="elo-list"></div>
     <details style="margin-top:10px;">
       <summary style="cursor:pointer; font-weight:600;">Come funziona</summary>
@@ -675,6 +707,7 @@ function renderAll() {
   renderSim();
   renderElo();
   renderChem();
+  renderDash();
 }
 async function initSync() {
   let dbCap = null;
@@ -1470,28 +1503,17 @@ function renderRankings() {
     .sort((a, b) => b.mvp - a.mvp);
 
   const scorersEl = document.getElementById('ranking-scorers');
-  scorersEl.innerHTML = scorers.length ? scorers.map((s, i) => `
-    <div class="team-card" style="cursor:default;">
-      <span>${i + 1}. ${pnameHtml(s.id, s.name)}</span>
-      <span>${valueLabel(s)}</span>
-    </div>`).join('') : '<p class="empty-note">Nessun dato ancora: salva una partita per iniziare.</p>';
+  const sval = x => mode === 'goals' ? x.goals : mode === 'assists' ? x.assists : x.points;
+  scorersEl.innerHTML = scorers.length ? scorers.map((s, i) => rankRowHtml(i, pnameHtml(s.id, s.name), valueLabel(s), sval(s) / sval(scorers[0]))).join('') : '<p class="empty-note">Nessun dato ancora: salva una partita per iniziare.</p>';
 
   const ogList = roster.map(p => ({ id: p.id, name: p.name, og: agg[p.id]?.og || 0 }))
     .filter(x => x.og > 0)
     .sort((a, b) => b.og - a.og);
   const ogEl = document.getElementById('ranking-owngoals');
-  if (ogEl) ogEl.innerHTML = ogList.length ? ogList.map((m, i) => `
-    <div class="team-card" style="cursor:default;">
-      <span>${i + 1}. ${pnameHtml(m.id, m.name)}</span>
-      <span>${m.og} autogol</span>
-    </div>`).join('') : '<p class="empty-note">Nessun autogol registrato. Meglio così.</p>';
+  if (ogEl) ogEl.innerHTML = ogList.length ? ogList.map((m, i) => rankRowHtml(i, pnameHtml(m.id, m.name), `${m.og} autogol`, m.og / ogList[0].og)).join('') : '<p class="empty-note">Nessun autogol registrato. Meglio così.</p>';
 
   const mvpEl = document.getElementById('ranking-mvp');
-  mvpEl.innerHTML = mvpList.length ? mvpList.map((m, i) => `
-    <div class="team-card" style="cursor:default;">
-      <span>${i + 1}. ${pnameHtml(m.id, m.name)}</span>
-      <span>${m.mvp} MVP</span>
-    </div>`).join('') : '<p class="empty-note">Nessun MVP assegnato ancora.</p>';
+  mvpEl.innerHTML = mvpList.length ? mvpList.map((m, i) => rankRowHtml(i, pnameHtml(m.id, m.name), `${m.mvp} MVP`, m.mvp / mvpList[0].mvp)).join('') : '<p class="empty-note">Nessun MVP assegnato ancora.</p>';
 }
 
 /* ---- Disposizione in campo ---- */
@@ -2867,6 +2889,7 @@ function eloCalc() {
 function renderElo() {
   const box = document.getElementById('elo-list');
   if (!box) return;
+  renderEloChart();
   const rows = eloCalc();
   if (rows.length === 0) { box.innerHTML = '<p class="empty-note">Serve almeno una partita con risultato per calcolare l\'Elo.</p>'; return; }
   // percezione: posizione per voti degli amici contro posizione per risultati (solo admin)
@@ -2883,13 +2906,14 @@ function renderElo() {
       });
     }
   }
+  const eHi = rows[0].elo, eLo = rows[rows.length - 1].elo - 40;
   box.innerHTML = rows.map((r, i) => {
     const up = r.last >= 0;
     const chip = r.games < ELO_PROVISIONAL ? '<span class="elo-chip prov">provvisorio</span>'
       : tag[r.id] === 'over' ? '<span class="elo-chip over" title="I voti degli amici lo mettono più in alto di quanto dicano i risultati">sopravvalutato</span>'
       : tag[r.id] === 'under' ? '<span class="elo-chip under" title="I risultati lo mettono più in alto di quanto dicano i voti degli amici">sottovalutato</span>' : '';
-    return `<div class="team-card" style="cursor:default;">
-      <span>${i + 1}. ${pnameHtml(r.id, r.name)}${chip}</span>
+    return `<div class="team-card rk" style="cursor:default; --w:${Math.max(4, Math.round((r.elo - eLo) / Math.max(1, eHi - eLo) * 100))}%; --d:${i * 60}ms;"><i class="rk-bar"></i>
+      <span>${rankMedal(i)} ${pnameHtml(r.id, r.name)}${chip}</span>
       <span><strong>${Math.round(r.elo)}</strong> <span style="color:${up ? 'var(--accent)' : 'var(--danger)'}; font-size:12px;">${up ? '▲' : '▼'} ${Math.abs(Math.round(r.last))}</span> <span style="color:var(--text-muted); font-size:11px;">· ${r.games} ${r.games === 1 ? 'partita' : 'partite'}</span></span>
     </div>`;
   }).join('') + (isVoteOnlyMode ? '' : '<p class="hint" style="margin-top:8px;">"Sopravvalutato" e "sottovalutato" (visibili solo a te) confrontano la posizione per Elo con quella per media dei voti degli amici, tra chi ha almeno 3 partite e abbastanza voti.</p>');
@@ -2990,6 +3014,145 @@ function simChemHtml(A, B) {
   });
   return lines.length ? `<div class="sim-title">Affiatamento delle coppie</div>${lines.join('')}<p class="hint">🔥 coppia che ha vinto spesso insieme, ❄️ coppia che ha perso spesso. Non cambia le probabilità qui sopra, che si basano sui punteggi tecnici.</p>` : '';
 }
+/* ---- Grafica dei dati ---- */
+function rankMedal(i) { return ['🥇', '🥈', '🥉'][i] || (i + 1) + '.'; }
+function rankRowHtml(i, nameHtml, valueHtml, frac) {
+  const w = Math.max(4, Math.min(100, Math.round(frac * 100)));
+  return `<div class="team-card rk" style="cursor:default; --w:${w}%; --d:${i * 60}ms;"><i class="rk-bar"></i><span>${rankMedal(i)} ${nameHtml}</span><span>${valueHtml}</span></div>`;
+}
+const ELO_COLORS = ['#1d4ed8', '#f5b301', '#e0457b', '#1c9a6c', '#8b5cf6', '#f97316', '#0ea5e9', '#84cc16', '#ef4444', '#64748b', '#14b8a6', '#a16207'];
+let eloChartSel = null;   // insieme di id mostrati nel grafico (null = scelta automatica)
+function eloHistory() {
+  const played = matches.filter(matchHasResult).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const R = {}, first = {}, series = {};
+  const n = played.length;
+  played.forEach((m, k) => {
+    const A = m.teamA || [], B = m.teamB || [];
+    if (!A.length || !B.length) return;
+    const sc = pmScore(m);
+    const r = id => (id in R ? R[id] : ELO_START);
+    const mean = L => L.reduce((t, p) => t + r(p.id), 0) / L.length;
+    const E = 1 / (1 + Math.pow(10, (mean(B) - mean(A)) / 400));
+    const S = sc.a > sc.b ? 1 : sc.a < sc.b ? 0 : 0.5;
+    const gd = Math.abs(sc.a - sc.b);
+    const G = gd <= 1 ? 1 : gd === 2 ? 1.5 : (11 + gd) / 8;
+    const d = ELO_K * G * (S - E);
+    [[A, d], [B, -d]].forEach(([L, dd]) => L.forEach(p => {
+      if (!(p.id in first)) { first[p.id] = k; series[p.id] = new Array(n + 1).fill(null); series[p.id][k] = ELO_START; }
+      R[p.id] = r(p.id) + dd;
+      series[p.id][k + 1] = R[p.id];
+    }));
+    // chi non ha giocato questa partita mantiene il valore
+    Object.keys(series).forEach(id => { if (series[id][k + 1] === null) series[id][k + 1] = R[id]; });
+  });
+  return { played, series, R };
+}
+function eloChartToggle(id) {
+  const h = eloHistory();
+  if (!eloChartSel) eloChartSel = new Set(eloAutoSel(h));
+  if (eloChartSel.has(id)) eloChartSel.delete(id); else eloChartSel.add(id);
+  renderEloChart();
+}
+function eloAutoSel(h) {
+  return Object.keys(h.R).sort((a, b) => h.R[b] - h.R[a]).slice(0, 5);
+}
+function renderEloChart() {
+  const box = document.getElementById('elo-chart');
+  if (!box) return;
+  const h = eloHistory();
+  const ids = Object.keys(h.R).sort((a, b) => h.R[b] - h.R[a]);
+  if (h.played.length < 2 || ids.length === 0) { box.innerHTML = ''; return; }
+  if (!eloChartSel) eloChartSel = new Set(eloAutoSel(h));
+  const shown = ids.filter(id => eloChartSel.has(id));
+  const col = id => ELO_COLORS[ids.indexOf(id) % ELO_COLORS.length];
+  const W = 360, H = 220, L = 40, Rm = 74, T = 14, B = 28;
+  const n = h.played.length;
+  let lo = Infinity, hi = -Infinity;
+  (shown.length ? shown : ids).forEach(id => h.series[id].forEach(v => { if (v !== null) { lo = Math.min(lo, v); hi = Math.max(hi, v); } }));
+  lo = Math.min(lo, ELO_START); hi = Math.max(hi, ELO_START);
+  lo = Math.floor((lo - 15) / 25) * 25; hi = Math.ceil((hi + 15) / 25) * 25;
+  const x = i => L + i * (W - L - Rm) / n;
+  const y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+  const step = (hi - lo) <= 100 ? 25 : (hi - lo) <= 250 ? 50 : 100;
+  let grid = '';
+  for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) {
+    grid += `<line x1="${L}" x2="${W - Rm}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" style="stroke:var(--border)" stroke-width="1"${v === ELO_START ? ' stroke-dasharray="5 4"' : ''}/><text x="${L - 6}" y="${(y(v) + 3.5).toFixed(1)}" text-anchor="end" font-size="10" style="fill:var(--text-muted)">${v}</text>`;
+  }
+  const dFmt = m => { const d = new Date(m.date); return `${d.getDate()}/${d.getMonth() + 1}`; };
+  const xl = `<text x="${x(0)}" y="${H - 8}" font-size="10" text-anchor="start" style="fill:var(--text-muted)">inizio</text><text x="${x(n)}" y="${H - 8}" font-size="10" text-anchor="end" style="fill:var(--text-muted)">${dFmt(h.played[n - 1])}</text>`;
+  // linee
+  let lines = '';
+  shown.forEach(id => {
+    const pts = h.series[id].map((v, i) => v === null ? null : `${x(i).toFixed(1)},${y(v).toFixed(1)}`).filter(Boolean).join(' ');
+    lines += `<polyline points="${pts}" fill="none" stroke="${col(id)}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>`;
+  });
+  // etichette finali, distanziate per non sovrapporsi
+  const ends = shown.map(id => ({ id, v: h.R[id], y: y(h.R[id]) })).sort((a, b) => a.y - b.y);
+  for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 13) ends[i].y = ends[i - 1].y + 13;
+  const labels = ends.map(e => {
+    const nm = playerNameOf(e.id); const short = nm.length > 8 ? nm.slice(0, 7) + '…' : nm;
+    return `<circle cx="${x(n).toFixed(1)}" cy="${y(e.v).toFixed(1)}" r="3.6" fill="${col(e.id)}"/><text x="${(x(n) + 7).toFixed(1)}" y="${(e.y + 3.5).toFixed(1)}" font-size="10.5" font-weight="700" fill="${col(e.id)}">${escapeHtml(short)} ${Math.round(e.v)}</text>`;
+  }).join('');
+  const legend = ids.map(id => `<button type="button" class="elo-leg${eloChartSel.has(id) ? ' on' : ''}" style="--c:${col(id)}" aria-pressed="${eloChartSel.has(id)}" onclick="eloChartToggle('${id}')"><i></i>${escapeHtml(playerNameOf(id))}</button>`).join('');
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Andamento del punteggio Elo partita dopo partita">${grid}${xl}${lines}${labels}</svg>
+    <div class="elo-legend">${legend}</div>
+    <p class="hint" style="margin-top:6px;">Tocca un nome per mostrare o nascondere la sua linea. La linea tratteggiata è il punto di partenza, 1000.</p>`;
+}
+// ---- Riquadro iniziale con i numeri in primo piano ----
+let dashPrev = {};
+function dashNum(key, value, dec) {
+  return `<span data-count="${value}" data-dec="${dec || 0}" data-key="${key}">${(dashPrev[key] || 0).toFixed(dec || 0)}</span>`;
+}
+function animateCounts(root) {
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  root.querySelectorAll('[data-count]').forEach(el => {
+    const to = parseFloat(el.dataset.count), dec = +el.dataset.dec || 0, key = el.dataset.key;
+    const from = dashPrev[key] !== undefined ? dashPrev[key] : 0;
+    dashPrev[key] = to;
+    if (reduce || from === to) { el.textContent = to.toFixed(dec); return; }
+    const t0 = performance.now(), dur = 800;
+    const tick = now => {
+      const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      el.textContent = (from + (to - from) * e).toFixed(dec);
+      if (k < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+}
+function renderDash() {
+  const grid = document.getElementById('dash-grid');
+  if (!grid) return;
+  const played = matches.filter(matchHasResult).sort((a, b) => new Date(b.date) - new Date(a.date));
+  if (played.length === 0) {
+    grid.innerHTML = `<div class="dash-tile wide"><div class="dash-ico">⚽</div><div class="dash-label">In breve</div><div class="dash-sub" style="margin-top:6px;">Salva la prima partita con il risultato: qui compariranno gli ultimi numeri del gruppo.</div></div>`;
+    return;
+  }
+  const last = played[0], sc = pmScore(last);
+  const nm = last.teamNames || { A: 'Squadra A', B: 'Squadra B' };
+  const dateStr = new Date(last.date).toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
+  const agg = computeAggregates();
+  const topOf = f => {
+    const arr = roster.map(p => ({ id: p.id, name: p.name, v: (agg[p.id] && agg[p.id][f]) || 0 })).filter(x => x.v > 0).sort((a, b) => b.v - a.v);
+    if (!arr.length) return null;
+    const ties = arr.filter(x => x.v === arr[0].v);
+    return { v: arr[0].v, name: ties.length > 1 ? `${ties[0].name} e altri ${ties.length - 1}` : ties[0].name };
+  };
+  const scorer = topOf('goals'), mvp = topOf('mvp');
+  const elo = eloCalc();
+  const eloTop = elo.length ? elo[0] : null;
+  const totalGoals = played.reduce((t, m) => { const s2 = pmScore(m); return t + s2.a + s2.b; }, 0);
+  let form = null;
+  Object.keys(perfStatsCache).forEach(id => { const s2 = perfStatsCache[id]; if (s2.count >= PROVISIONAL_BELOW && (!form || s2.weighted > form.v)) form = { id, v: s2.weighted }; });
+  const tiles = [];
+  tiles.push(`<div class="dash-tile wide" style="--d:0ms"><div class="dash-label">Ultima partita · ${dateStr}</div><div class="dash-big">${dashNum('la', sc.a)} – ${dashNum('lb', sc.b)}</div><div class="dash-vs"><span>${escapeHtml(nm.A)}</span><span>${escapeHtml(nm.B)}</span></div></div>`);
+  if (scorer) tiles.push(`<div class="dash-tile" style="--d:70ms"><div class="dash-ico">⚽</div><div class="dash-label">Capocannoniere</div><div class="dash-big">${dashNum('sc', scorer.v)}</div><div class="dash-sub">${escapeHtml(scorer.name)}</div></div>`);
+  if (mvp) tiles.push(`<div class="dash-tile" style="--d:140ms"><div class="dash-ico">⭐</div><div class="dash-label">Più MVP</div><div class="dash-big">${dashNum('mv', mvp.v)}</div><div class="dash-sub">${escapeHtml(mvp.name)}</div></div>`);
+  if (eloTop) tiles.push(`<div class="dash-tile" style="--d:210ms"><div class="dash-ico">🏆</div><div class="dash-label">In vetta all'Elo</div><div class="dash-big">${dashNum('el', Math.round(eloTop.elo))}</div><div class="dash-sub">${escapeHtml(eloTop.name)}</div></div>`);
+  if (form) tiles.push(`<div class="dash-tile" style="--d:280ms"><div class="dash-ico">🔥</div><div class="dash-label">Miglior media voti</div><div class="dash-big">${dashNum('fo', form.v, 2)}</div><div class="dash-sub">${escapeHtml(playerNameOf(form.id))}</div></div>`);
+  tiles.push(`<div class="dash-tile" style="--d:350ms"><div class="dash-ico">📊</div><div class="dash-label">Gol segnati</div><div class="dash-big">${dashNum('gt', totalGoals)}</div><div class="dash-sub">in ${played.length} ${played.length === 1 ? 'partita' : 'partite'} · ${(totalGoals / played.length).toFixed(1)} a partita</div></div>`);
+  grid.innerHTML = tiles.join('');
+  animateCounts(grid);
+}
 let overallPerfUnsubscribe = null;
 function computeOverallPerformance(voteDocs) {
   const totals = {};
@@ -3028,6 +3191,7 @@ function renderOverallPerformance(totals) {
   const stats = weightedAverages(totals);
   perfStatsCache = stats;
   renderElo();
+  renderDash();
   const rows = roster.map(p => {
     const s = stats[p.id];
     if (!s) return null;
@@ -3039,8 +3203,8 @@ function renderOverallPerformance(totals) {
   }
   const groupMean = rows[0].groupMean;
   container.innerHTML = rows.map((r, i) => `
-    <div class="team-card" style="cursor:default;">
-      <span>${i + 1}. ${pnameHtml(r.id, r.name)}${r.count < PROVISIONAL_BELOW ? ' <span style="font-size:10px; color:var(--gold); border:1px solid var(--gold); border-radius:4px; padding:1px 4px; margin-left:4px;">provvisoria</span>' : ''}</span>
+    <div class="team-card rk" style="cursor:default; --w:${Math.max(4, Math.round(r.weighted * 10))}%; --d:${i * 60}ms;"><i class="rk-bar"></i>
+      <span>${rankMedal(i)} ${pnameHtml(r.id, r.name)}${r.count < PROVISIONAL_BELOW ? ' <span style="font-size:10px; color:var(--gold); border:1px solid var(--gold); border-radius:4px; padding:1px 4px; margin-left:4px;">provvisoria</span>' : ''}</span>
       <span><strong>${r.weighted.toFixed(2)}</strong> <span style="color:var(--text-muted); font-size:11px;">(grezza ${r.raw.toFixed(2)} · ${r.count} ${r.count === 1 ? 'voto' : 'voti'})</span></span>
     </div>`).join('') + `
     <p class="hint" style="margin-top:8px;">Media del gruppo: ${groupMean.toFixed(2)}. Il valore in grassetto è corretto in base a quanti voti ha ricevuto ciascuno: con pochi voti si avvicina alla media del gruppo, con tanti voti coincide con la media vera.</p>`;
@@ -3373,7 +3537,8 @@ function initCollapsible() {
     bar.className = 'sec-tools';
     bar.id = 'sec-tools';
     bar.innerHTML = '<span>Sezioni:</span><button type="button" class="btn-ghost" onclick="setAllCollapsed(true)">Chiudi tutte</button><button type="button" class="btn-ghost" onclick="setAllCollapsed(false)">Apri tutte</button>';
-    wrap.insertBefore(bar, wrap.firstChild);
+    const dashEl = document.getElementById('dash-section');
+    wrap.insertBefore(bar, dashEl ? dashEl.nextSibling : wrap.firstChild);
   }
 }
 document.addEventListener('click', e => {
