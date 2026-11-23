@@ -308,6 +308,31 @@ button.elo-leg { border-radius: 999px; padding: 6px 11px; font-size: 12.5px; fon
 button.elo-leg i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); display: inline-block; opacity: .35; }
 button.elo-leg.on { color: var(--text); border-color: var(--c); }
 button.elo-leg.on i { opacity: 1; }
+/* Schede, barra in basso, intestazione compatta */
+.tab-hidden { display: none !important; }
+.hero { padding: 30px 20px 86px; }
+h1 { font-size: 38px; margin: 0 0 6px; max-width: none; line-height: 1.02; }
+.subtitle { font-size: 16px; margin: 0; max-width: none; }
+.hero-cta { display: none !important; }
+body.tab-not-home .hero { padding-bottom: 26px; }
+.bottombar { display: none; }
+@media (max-width: 719px) {
+  .nav-links { display: none; }
+  .topbar-in { height: 52px; }
+  .brand span { display: inline; font-size: 17px; }
+  body { --nav-h: 52px; padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+  .hero { padding: 20px 18px 80px; }
+  h1 { font-size: 28px; }
+  .subtitle { font-size: 14.5px; }
+  body.tab-not-home .hero { padding-bottom: 20px; }
+  .bottombar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; background: var(--nav-bg); padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -1px 0 rgba(255,255,255,.1), 0 -8px 24px -12px rgba(0,0,0,.5); }
+  .bottombar button { flex: 1; background: none; border: 0; border-radius: 14px; color: rgba(255,255,255,.65); display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px 5px; font: inherit; cursor: pointer; min-width: 0; box-shadow: none; transform: none; }
+  .bottombar .bb-ico { font-size: 25px; line-height: 1.1; filter: grayscale(.6) opacity(.8); transition: transform .15s; }
+  .bottombar .bb-lbl { font-size: 11px; font-weight: 700; letter-spacing: .01em; }
+  .bottombar button.active { color: var(--pop-ink); background: var(--pop); }
+  .bottombar button.active .bb-ico { filter: none; transform: translateY(-1px) scale(1.08); }
+}
+@media (min-width: 720px) { .brand span { display: inline; } }
 </style>
 </head>
 <body>
@@ -320,6 +345,7 @@ button.elo-leg.on i { opacity: 1; }
     <div class="nav-links" id="nav-links"></div>
   </div>
 </nav>
+<nav class="bottombar" id="bottombar" aria-label="Schede"></nav>
 <header class="hero" id="top">
   <div class="hero-in">
     <h1>Squadre equilibrate</h1>
@@ -3449,58 +3475,64 @@ function generateSuggestionsFromVotes(matchId) {
   })());
 }
 
-// Clic su un link interno: salta subito alla sezione (senza cambiare l'indirizzo della pagina)
+// ---- Schede (tab): una sezione alla volta invece di una pagina lunghissima ----
+const TABS = [
+  ['home', 'Home', '🏠', ['dash-section']],
+  ['partita', 'Partita', '⚽', ['roster-section','weights-section','match-section','result-section','pitch-section','sim-section']],
+  ['stat', 'Statistiche', '📊', ['stats-section','rankings-section','elo-section','chem-section','performance-section','suggestions-section']],
+  ['storico', 'Storico', '📜', ['history-section']],
+  ['vota', 'Vota', '🗳️', ['vote-section']]
+];
+let currentTab = 'home';
+function tabsAvailable() { return TABS.filter(t => !(isVoteOnlyMode && t[0] === 'partita')); }
+function tabOfSection(id) { const t = TABS.find(t => t[3].includes(id)); return t ? t[0] : null; }
+function tabKey() { return 'squadre-tab-v1-' + (location.pathname.split('/').pop() || 'index') + (isVoteOnlyMode ? '-vota' : ''); }
+function applyTab() {
+  TABS.forEach(t => t[3].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('tab-hidden', t[0] !== currentTab);
+  }));
+  const tools = document.getElementById('sec-tools');
+  if (tools) tools.classList.toggle('tab-hidden', !(currentTab === 'partita' || currentTab === 'stat'));
+  document.body.classList.toggle('tab-not-home', currentTab !== 'home');
+  document.querySelectorAll('[data-tab]').forEach(el => {
+    const on = el.dataset.tab === currentTab;
+    el.classList.toggle('active', on);
+    if (on) el.setAttribute('aria-current', 'page'); else el.removeAttribute('aria-current');
+  });
+}
+function switchTab(id, noScroll) {
+  if (!tabsAvailable().some(t => t[0] === id)) id = 'home';
+  currentTab = id;
+  try { localStorage.setItem(tabKey(), id); } catch (e) {}
+  applyTab();
+  if (!noScroll) window.scrollTo({ top: 0, behavior: 'auto' });
+}
+function buildTabs() {
+  const list = tabsAvailable();
+  const top = document.getElementById('nav-links');
+  if (top) top.innerHTML = list.map(t => `<a href="#tab-${t[0]}" data-tab="${t[0]}">${t[1]}</a>`).join('');
+  const bar = document.getElementById('bottombar');
+  if (bar) bar.innerHTML = list.map(t => `<button type="button" data-tab="${t[0]}" aria-label="${t[1]}"><span class="bb-ico">${t[2]}</span><span class="bb-lbl">${t[1]}</span></button>`).join('');
+  let saved = 'home';
+  try { saved = localStorage.getItem(tabKey()) || 'home'; } catch (e) {}
+  currentTab = list.some(t => t[0] === saved) ? saved : 'home';
+  applyTab();
+}
 document.addEventListener('click', e => {
+  const tb = e.target.closest('#bottombar [data-tab]');
+  if (tb) { switchTab(tb.dataset.tab); return; }
   const a = e.target.closest('a[href^="#"]');
   if (!a) return;
   const id = a.getAttribute('href').slice(1);
-  const target = id === 'top' ? document.body : document.getElementById(id);
+  if (id.startsWith('tab-')) { e.preventDefault(); switchTab(id.slice(4)); return; }
+  if (id === 'top') { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'auto' }); return; }
+  const target = document.getElementById(id);
   if (!target) return;
   e.preventDefault();
   expandSection(target);
   const nav = document.querySelector('.topbar');
-  const offset = nav ? nav.offsetHeight + 12 : 12;
-  const y = id === 'top' ? 0 : target.getBoundingClientRect().top + window.pageYOffset - offset;
-  window.scrollTo({ top: Math.max(0, y), behavior: 'auto' });
-  if (id !== 'top') {
-    document.querySelectorAll('#nav-links a').forEach(l => l.classList.toggle('active', l.dataset.id === id));
-  }
-});
-
-// ---- Barra di navigazione: mostra solo le sezioni visibili ----
-const NAV_ITEMS = [
-  ['roster-section','Rosa'],['weights-section','Pesi'],['match-section','Partita'],['result-section','Squadre'],
-  ['pitch-section','Campo'],['sim-section','Simulatore'],['stats-section','Marcatori'],['rankings-section','Classifiche'],['elo-section','Elo'],['chem-section','Coppie'],
-  ['performance-section','Media voti'],['suggestions-section','Suggerimenti'],['history-section','Storico'],['vote-section','Vota']
-];
-let navTimer = null, navObserver = null;
-function buildNav() {
-  const box = document.getElementById('nav-links');
-  if (!box) return;
-  const items = NAV_ITEMS.filter(([id]) => {
-    const el = document.getElementById(id);
-    return el && el.style.display !== 'none';
-  });
-  const key = items.map(i => i[0]).join(',');
-  if (box.dataset.key === key) return;
-  box.dataset.key = key;
-  box.innerHTML = items.map(([id, label]) => `<a href="#${id}" data-id="${id}">${label}</a>`).join('');
-  if (navObserver) navObserver.disconnect();
-  navObserver = new IntersectionObserver(entries => {
-    entries.forEach(en => {
-      if (!en.isIntersecting) return;
-      box.querySelectorAll('a').forEach(a => a.classList.toggle('active', a.dataset.id === en.target.id));
-      const act = box.querySelector('a.active');
-      if (act) act.scrollIntoView({ block: 'nearest', inline: 'center' });
-    });
-  }, { rootMargin: '-35% 0px -60% 0px' });
-  items.forEach(([id]) => navObserver.observe(document.getElementById(id)));
-}
-function scheduleNav() { clearTimeout(navTimer); navTimer = setTimeout(buildNav, 120); }
-document.addEventListener('DOMContentLoaded', () => {
-  buildNav();
-  new MutationObserver(scheduleNav).observe(document.querySelector('.wrap'), { subtree: true, attributes: true, attributeFilter: ['style'] });
-  setTimeout(buildNav, 800);
+  window.scrollTo({ top: Math.max(0, target.getBoundingClientRect().top + window.pageYOffset - (nav ? nav.offsetHeight : 0) - 12), behavior: 'auto' });
 });
 
 let isVoteOnlyMode = false;
@@ -3516,6 +3548,7 @@ function saveCollapsed() {
   try { localStorage.setItem(collapseKey(), JSON.stringify(collapsibleSections().filter(s => s.classList.contains('collapsed')).map(s => s.id))); } catch (e) {}
 }
 function expandSection(sec) {
+  if (sec && sec.id) { const t = tabOfSection(sec.id); if (t && t !== currentTab && typeof switchTab === 'function') switchTab(t, true); }
   if (sec && sec.classList && sec.classList.contains('collapsed')) { setCollapsed(sec, false); saveCollapsed(); }
 }
 function setAllCollapsed(on) {
@@ -3608,6 +3641,9 @@ try {
   }
 } catch (e) {}
 applyVoteOnlyMode();
+buildTabs();
+document.addEventListener('DOMContentLoaded', applyTab);
+window.addEventListener('load', applyTab);
 initMatchDate();
 renderAll();
 populateVoteMatchSelect();
