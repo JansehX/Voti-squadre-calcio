@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Squadre equilibrate</title>
 <meta name="theme-color" content="#0a1530">
+<script>try{var __t=localStorage.getItem("squadre-theme-v1");if(__t&&__t!=="auto")document.documentElement.setAttribute("data-theme",__t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Voti Squadre">
@@ -288,7 +289,7 @@ button.sim-chip[data-st="B"] { background: var(--sim-b); color: #fff; }
 .dash { max-width: 980px; margin: -64px auto 22px; position: relative; z-index: 2; }
 .dash-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 .dash-tile { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 16px 16px 14px; box-shadow: 0 14px 30px -18px rgba(10,21,48,.45); position: relative; overflow: hidden; animation: tileIn .5s var(--d, 0ms) both ease-out; }
-.dash-tile.wide { grid-column: 1 / -1; background: linear-gradient(135deg, var(--nav-bg), #15318f); color: #fff; border-color: transparent; }
+.dash-tile.wide { grid-column: 1 / -1; background: linear-gradient(135deg, var(--nav-bg), var(--hero-b)); color: #fff; border-color: transparent; }
 .dash-ico { font-size: 22px; line-height: 1; margin-bottom: 8px; }
 .dash-label { font-size: 11.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--text-secondary); }
 .dash-tile.wide .dash-label { color: rgba(255,255,255,.72); }
@@ -308,6 +309,9 @@ button.elo-leg { border-radius: 999px; padding: 6px 11px; font-size: 12.5px; fon
 button.elo-leg i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); display: inline-block; opacity: .35; }
 button.elo-leg.on { color: var(--text); border-color: var(--c); }
 button.elo-leg.on i { opacity: 1; }
+.dash-link { cursor: pointer; }
+.dash-link:active { transform: scale(.985); }
+.dash-go { margin-top: 10px; font-size: 13px; font-weight: 700; color: var(--gold); }
 /* Schede, barra in basso, intestazione compatta */
 .tab-hidden { display: none !important; }
 .hero { padding: 30px 20px 86px; }
@@ -333,6 +337,51 @@ body.tab-not-home .hero { padding-bottom: 26px; }
   .bottombar button.active .bb-ico { filter: none; transform: translateY(-1px) scale(1.08); }
 }
 @media (min-width: 720px) { .brand span { display: inline; } }
+/* Temi */
+:root[data-theme="campo"] {
+  --bg: #f0f6ee; --surface: #ffffff; --surface-2: #e7f0e3; --text: #10230f; --text-secondary: #405a3c; --text-muted: #74896d;
+  --accent: #15803d; --accent-dark: #116530; --accent-contrast: #ffffff; --accent-soft: #d8f0dd; --pop: #f5b301; --pop-ink: #1b1400; --pop-soft: #fff4d1;
+  --nav-bg: #0e2a14; --hero-a: #0e2a14; --hero-b: #1c6c35; --gold: #c47f00; --border: #d6e3d1; --danger: #c0392b; --danger-bg: #fbeceb;
+  --shadow: 0 1px 2px rgba(16,35,15,.05), 0 14px 30px -16px rgba(16,35,15,.22);
+}
+:root[data-theme="tramonto"] {
+  color-scheme: dark;
+  --bg: #140d1f; --surface: #1f1530; --surface-2: #2a1d40; --text: #f7eefc; --text-secondary: #cbb5dc; --text-muted: #9482a8;
+  --accent: #ff8a5b; --accent-dark: #f26b3a; --accent-contrast: #2a0e00; --accent-soft: #43202a; --pop: #ffc15e; --pop-ink: #1b1000; --pop-soft: #3d2a10;
+  --nav-bg: #0d0817; --hero-a: #1c0f2e; --hero-b: #b5413a; --gold: #ffc15e; --border: #3a2a55; --danger: #ff8d82; --danger-bg: #34181c;
+  --shadow: 0 1px 2px rgba(0,0,0,.35), 0 14px 30px -16px rgba(0,0,0,.65);
+}
+:root[data-theme="mezzanotte"] {
+  color-scheme: dark;
+  --bg: #000000; --surface: #0e0e12; --surface-2: #18181e; --text: #f2f2f5; --text-secondary: #b0b0bb; --text-muted: #7a7a87;
+  --accent: #38d6c4; --accent-dark: #22b5a4; --accent-contrast: #00110f; --accent-soft: #0c2a28; --pop: #fbbf24; --pop-ink: #1b1400; --pop-soft: #2e2508;
+  --nav-bg: #000000; --hero-a: #000000; --hero-b: #0b4a45; --gold: #fbbf24; --border: #26262e; --danger: #ff8d82; --danger-bg: #2a1614;
+  --shadow: 0 1px 2px rgba(0,0,0,.5), 0 14px 30px -16px rgba(0,0,0,.8);
+}
+:root[data-theme="dark"] { color-scheme: dark; }
+.theme-btn { margin-left: auto; flex-shrink: 0; width: 38px; height: 38px; padding: 0; border-radius: 50%; background: rgba(255,255,255,.1); border: 0; color: #fff; font-size: 18px; line-height: 1; cursor: pointer; box-shadow: none; display: inline-flex; align-items: center; justify-content: center; }
+.theme-btn:hover { background: rgba(255,255,255,.2); }
+.theme-pop { position: fixed; z-index: 90; top: calc(var(--nav-h) + env(safe-area-inset-top, 0px) + 6px); right: 12px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow), 0 20px 40px -10px rgba(0,0,0,.35); padding: 10px; width: 232px; display: none; }
+.theme-pop.open { display: block; }
+.theme-pop h4 { margin: 2px 6px 8px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); font-weight: 700; }
+.theme-pop button { display: flex; align-items: center; gap: 12px; width: 100%; background: none; border: 2px solid transparent; border-radius: 12px; padding: 8px 10px; color: var(--text); font: inherit; font-weight: 600; font-size: 14.5px; cursor: pointer; box-shadow: none; text-align: left; }
+.theme-pop button:hover { background: var(--surface-2); }
+.theme-pop button.on { border-color: var(--accent); background: var(--accent-soft); }
+.theme-pop button i { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--border); flex: none; }
+.theme-pop button em { margin-left: auto; font-style: normal; color: var(--accent); }
+/* PIN, backup */
+.pin-gate { position: fixed; inset: 0; z-index: 1000; background: var(--bg); color: var(--text); display: flex; align-items: center; justify-content: center; padding: 24px; }
+.pin-box { width: 100%; max-width: 340px; text-align: center; }
+.pin-box .pin-ico { font-size: 44px; }
+.pin-box h2 { margin: 8px 0 6px; font-family: 'Bricolage Grotesque','DM Sans',sans-serif; font-size: 26px; letter-spacing: -.02em; }
+.pin-box p { color: var(--text-secondary); font-size: 14.5px; margin: 0 0 18px; }
+.pin-box input { width: 100%; text-align: center; font-size: 28px; letter-spacing: .5em; padding: 12px 8px; margin-bottom: 12px; }
+.pin-box button { width: 100%; }
+.pin-err { color: var(--danger); font-size: 14px; min-height: 20px; margin: 4px 0 8px; font-weight: 600; }
+.pin-guest { display: inline-block; margin-top: 18px; font-size: 14px; color: var(--accent); font-weight: 600; }
+.admin-sub { margin: 16px 0 6px; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }
+.dash-nudge { margin: 12px 0 0; }
+.dash-nudge button { background: var(--pop-soft); color: var(--text); border: 1px solid var(--pop); border-radius: 999px; padding: 9px 16px; font-size: 13.5px; font-weight: 600; box-shadow: none; width: 100%; text-align: left; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -343,8 +392,10 @@ body.tab-not-home .hero { padding-bottom: 26px; }
       <span>Squadre</span>
     </a>
     <div class="nav-links" id="nav-links"></div>
+    <button type="button" class="theme-btn" id="theme-btn" aria-label="Cambia tema" aria-haspopup="true" title="Tema">🎨</button>
   </div>
 </nav>
+<div class="theme-pop" id="theme-pop" role="menu" aria-label="Temi"></div>
 <nav class="bottombar" id="bottombar" aria-label="Schede"></nav>
 <header class="hero" id="top">
   <div class="hero-in">
@@ -358,7 +409,7 @@ body.tab-not-home .hero { padding-bottom: 26px; }
 </header>
 <div class="wrap">
 
-  <section class="dash" id="dash-section" aria-label="In breve"><div class="dash-grid" id="dash-grid"></div></section>
+  <section class="dash" id="dash-section" aria-label="In breve"><div class="dash-grid" id="dash-grid"></div><div class="dash-nudge" id="backup-nudge" style="display:none;"></div></section>
 
   <section class="card" id="roster-section">
     <h2><span class="step-num">1</span>Rosa giocatori</h2>
@@ -371,8 +422,25 @@ body.tab-not-home .hero { padding-bottom: 26px; }
     <details style="margin-top:14px; border-top:1px solid var(--border); padding-top:10px;">
       <summary style="cursor:pointer; font-size:13px; color:var(--text-secondary);">Strumenti amministratore</summary>
       <p class="hint" style="margin-top:8px;">Visibile solo qui, non nella pagina di voto condivisa con gli amici.</p>
+      <div class="admin-sub">Backup</div>
+      <p class="hint">Il backup completo contiene rosa, partite, voti, MVP e foto. Scaricalo ogni tanto: se il database si rovina puoi ripristinare tutto da qui.</p>
       <div class="row" style="gap:8px; margin-top:6px;">
-        <button class="btn-ghost" onclick="downloadBackup()">Scarica backup dati</button>
+        <button class="btn-primary" onclick="downloadBackup()">Scarica backup completo</button>
+        <button class="btn-ghost" onclick="document.getElementById('restore-file').click()">Ripristina da backup</button>
+        <input type="file" id="restore-file" accept=".json,application/json" style="display:none;" onchange="restoreBackup(this)">
+      </div>
+      <p class="hint" id="backup-note"></p>
+      <div class="admin-sub">PIN amministratore</div>
+      <p class="hint" id="pin-status"></p>
+      <div class="row" style="gap:8px;">
+        <input type="password" id="pin-new" inputmode="numeric" autocomplete="new-password" maxlength="8" placeholder="Nuovo PIN (4–8 cifre)" style="max-width:220px;">
+        <button class="btn-ghost" onclick="savePin()">Salva PIN</button>
+        <button class="btn-ghost" id="pin-lock-btn" onclick="lockNow()">Blocca ora</button>
+        <button class="btn-danger-ghost" id="pin-remove-btn" onclick="removePin()">Rimuovi PIN</button>
+      </div>
+      <p class="hint" id="pin-note" style="display:none;"></p>
+      <div class="admin-sub">Voti</div>
+      <div class="row" style="gap:8px; margin-top:6px;">
         <button class="btn-danger-ghost" onclick="clearAllVotesClick()">Cancella tutti i voti</button>
       </div>
       <p class="hint" id="clear-votes-note" style="display:none;"></p>
@@ -699,6 +767,8 @@ let swapSelection = null;
 let db = null;
 let dbSaveInFlight = null;
 let dbSaveDirty = false;
+const PIN_LOCAL_KEY = 'squadre-pin-v1', PIN_OK_KEY = 'squadre-pin-ok-v1', LASTBACKUP_KEY = 'squadre-lastbackup-v1';
+let pinInfo = (() => { try { return JSON.parse(localStorage.getItem(PIN_LOCAL_KEY) || 'null'); } catch (e) { return null; } })();
 
 function schedulePersist() {
   try {
@@ -712,7 +782,9 @@ function schedulePersist() {
   if (!db) return;
   if (dbSaveInFlight) { dbSaveDirty = true; return; }
   dbSaveInFlight = db.doc('app/state').set({
-    roster, weights, matches, suggestions, teamMeta, suggestionLog, updatedAt: new Date().toISOString()
+    roster, weights, matches, suggestions, teamMeta, suggestionLog,
+    pinHash: pinInfo ? pinInfo.hash : null, pinSalt: pinInfo ? pinInfo.salt : null,
+    updatedAt: new Date().toISOString()
   }).catch(() => {}).finally(() => {
     dbSaveInFlight = null;
     if (dbSaveDirty) { dbSaveDirty = false; schedulePersist(); }
@@ -754,7 +826,11 @@ async function initSync() {
       if (Array.isArray(data.suggestions)) suggestions = JSON.parse(JSON.stringify(data.suggestions));
       if (data.teamMeta) teamMeta = JSON.parse(JSON.stringify(data.teamMeta));
       if (Array.isArray(data.suggestionLog)) suggestionLog = JSON.parse(JSON.stringify(data.suggestionLog));
+      pinInfo = (data.pinHash && data.pinSalt) ? { hash: data.pinHash, salt: data.pinSalt } : null;
+      try { if (pinInfo) localStorage.setItem(PIN_LOCAL_KEY, JSON.stringify(pinInfo)); else localStorage.removeItem(PIN_LOCAL_KEY); } catch (e) {}
       renderAll();
+      checkPinGate();
+      updatePinUi();
     } else {
       schedulePersist();
     }
@@ -1973,23 +2049,6 @@ function applyVoteLockState() {
     lockNote.style.display = 'none';
   }
 }
-function downloadBackup() {
-  const payload = { roster, weights, matches, suggestions, teamMeta, exportedAt: new Date().toISOString() };
-  try {
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'backup-squadre-' + todayLocalISODate() + '.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  } catch (e) {
-    console.error('Errore creando il backup:', e);
-    window.alert('Non è stato possibile creare il file di backup su questo browser.');
-  }
-}
 async function clearAllVotesClick() {
   const note = document.getElementById('clear-votes-note');
   if (!window.confirm('Cancellare tutti i voti di prestazione salvati finora? Non si può annullare.')) return;
@@ -3145,9 +3204,20 @@ function animateCounts(root) {
     requestAnimationFrame(tick);
   });
 }
+function openLastMatch(id) {
+  historyOpenId = id;
+  switchTab('storico', true);
+  renderHistory();
+  const d = document.querySelector(`#history-list details[data-id="${id}"]`);
+  const sec = document.getElementById('history-section');
+  if (sec) expandSection(sec);
+  const top = (d || sec || document.body).getBoundingClientRect().top + window.pageYOffset - 70;
+  window.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+}
 function renderDash() {
   const grid = document.getElementById('dash-grid');
   if (!grid) return;
+  updateBackupNudge();
   const played = matches.filter(matchHasResult).sort((a, b) => new Date(b.date) - new Date(a.date));
   if (played.length === 0) {
     grid.innerHTML = `<div class="dash-tile wide"><div class="dash-ico">⚽</div><div class="dash-label">In breve</div><div class="dash-sub" style="margin-top:6px;">Salva la prima partita con il risultato: qui compariranno gli ultimi numeri del gruppo.</div></div>`;
@@ -3170,7 +3240,7 @@ function renderDash() {
   let form = null;
   Object.keys(perfStatsCache).forEach(id => { const s2 = perfStatsCache[id]; if (s2.count >= PROVISIONAL_BELOW && (!form || s2.weighted > form.v)) form = { id, v: s2.weighted }; });
   const tiles = [];
-  tiles.push(`<div class="dash-tile wide" style="--d:0ms"><div class="dash-label">Ultima partita · ${dateStr}</div><div class="dash-big">${dashNum('la', sc.a)} – ${dashNum('lb', sc.b)}</div><div class="dash-vs"><span>${escapeHtml(nm.A)}</span><span>${escapeHtml(nm.B)}</span></div></div>`);
+  tiles.push(`<div class="dash-tile wide dash-link" role="button" tabindex="0" onclick="openLastMatch('${last.id}')" onkeydown="if(event.key==='Enter')openLastMatch('${last.id}')" style="--d:0ms"><div class="dash-label">Ultima partita · ${dateStr}</div><div class="dash-big">${dashNum('la', sc.a)} – ${dashNum('lb', sc.b)}</div><div class="dash-vs"><span>${escapeHtml(nm.A)}</span><span>${escapeHtml(nm.B)}</span></div><div class="dash-go">Vedi com'è andata →</div></div>`);
   if (scorer) tiles.push(`<div class="dash-tile" style="--d:70ms"><div class="dash-ico">⚽</div><div class="dash-label">Capocannoniere</div><div class="dash-big">${dashNum('sc', scorer.v)}</div><div class="dash-sub">${escapeHtml(scorer.name)}</div></div>`);
   if (mvp) tiles.push(`<div class="dash-tile" style="--d:140ms"><div class="dash-ico">⭐</div><div class="dash-label">Più MVP</div><div class="dash-big">${dashNum('mv', mvp.v)}</div><div class="dash-sub">${escapeHtml(mvp.name)}</div></div>`);
   if (eloTop) tiles.push(`<div class="dash-tile" style="--d:210ms"><div class="dash-ico">🏆</div><div class="dash-label">In vetta all'Elo</div><div class="dash-big">${dashNum('el', Math.round(eloTop.elo))}</div><div class="dash-sub">${escapeHtml(eloTop.name)}</div></div>`);
@@ -3641,6 +3711,225 @@ try {
 } catch (e) {}
 applyVoteOnlyMode();
 buildTabs();
+
+// ---- Backup completo e ripristino ----
+function lastBackupTs() { try { return parseInt(localStorage.getItem(LASTBACKUP_KEY) || '0', 10) || 0; } catch (e) { return 0; } }
+function fmtDay(ts) { return new Date(ts).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' }); }
+function updateBackupNudge() {
+  const el = document.getElementById('backup-nudge');
+  if (!el) return;
+  if (isVoteOnlyMode || (!roster.length && !matches.length)) { el.style.display = 'none'; return; }
+  const ts = lastBackupTs();
+  const days = ts ? Math.floor((Date.now() - ts) / 86400000) : null;
+  if (days !== null && days < 14) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.innerHTML = `<button type="button" onclick="downloadBackup()">💾 ${days === null ? 'Non hai ancora un backup dei dati.' : 'Ultimo backup ' + days + ' giorni fa.'} Tocca per scaricarlo</button>`;
+}
+function updateBackupNote() {
+  const n = document.getElementById('backup-note');
+  if (!n) return;
+  const ts = lastBackupTs();
+  n.textContent = ts ? 'Ultimo backup scaricato: ' + fmtDay(ts) + '.' : 'Non hai ancora scaricato nessun backup.';
+}
+async function collectBackup() {
+  const out = { app: 'squadre-backup', version: 2, exportedAt: new Date().toISOString(),
+    roster, weights, matches, suggestions, teamMeta, suggestionLog, avatars, perfVotes: [], mvpVotes: [] };
+  let fromDb = false;
+  if (db) {
+    try {
+      const pv = await db.collection('perf-votes').get();
+      const mv = await db.collection('mvp-votes').get();
+      out.perfVotes = pv.docs.map(d => ({ id: d.id, data: d.data() }));
+      out.mvpVotes = mv.docs.map(d => ({ id: d.id, data: d.data() }));
+      fromDb = true;
+    } catch (e) { console.error('Backup: errore leggendo i voti dal database', e); }
+  }
+  if (!fromDb) {
+    out.perfVotes = Object.entries(loadLocalVotes()).map(([id, data]) => ({ id, data }));
+    out.mvpVotes = Object.entries(loadLocalMvp()).map(([id, data]) => ({ id, data }));
+  }
+  return out;
+}
+async function downloadBackup() {
+  const note = document.getElementById('backup-note');
+  if (note) note.textContent = 'Preparo il backup…';
+  try {
+    const payload = await collectBackup();
+    const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'backup-squadre-' + todayLocalISODate() + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    try { localStorage.setItem(LASTBACKUP_KEY, String(Date.now())); } catch (e) {}
+    updateBackupNote(); updateBackupNudge();
+    if (note) note.textContent = `Backup scaricato: ${payload.roster.length} giocatori, ${payload.matches.length} partite, ${payload.perfVotes.length} voti, ${Object.keys(payload.avatars || {}).length} foto. Conservalo in un posto sicuro (Drive, email a te stesso).`;
+  } catch (e) {
+    console.error('Errore creando il backup:', e);
+    window.alert('Non è stato possibile creare il file di backup su questo browser.');
+    updateBackupNote();
+  }
+}
+async function restoreBackup(input) {
+  const f = input.files && input.files[0];
+  input.value = '';
+  if (!f) return;
+  const note = document.getElementById('backup-note');
+  let d;
+  try { d = JSON.parse(await f.text()); } catch (e) { window.alert('Il file non è un backup valido (non riesco a leggerlo).'); return; }
+  if (!d || !Array.isArray(d.roster) || !Array.isArray(d.matches)) { window.alert('Il file non sembra un backup di questa app (mancano rosa o partite).'); return; }
+  const nPerf = Array.isArray(d.perfVotes) ? d.perfVotes.length : 0;
+  const nMvp = Array.isArray(d.mvpVotes) ? d.mvpVotes.length : 0;
+  const msg = `Il backup contiene ${d.roster.length} giocatori, ${d.matches.length} partite, ${nPerf} voti prestazione, ${nMvp} voti MVP` + (d.exportedAt ? ` (creato il ${fmtDay(d.exportedAt)})` : '') + '.\n\nRipristinare SOSTITUISCE i dati attuali con questi. Se non l\'hai già fatto, scarica prima un backup di quelli attuali.\n\nContinuare?';
+  if (!window.confirm(msg)) return;
+  if (note) note.textContent = 'Ripristino in corso…';
+  roster = JSON.parse(JSON.stringify(d.roster));
+  matches = JSON.parse(JSON.stringify(d.matches));
+  if (d.weights) weights = mergeMissingSubs(JSON.parse(JSON.stringify(d.weights)));
+  suggestions = Array.isArray(d.suggestions) ? JSON.parse(JSON.stringify(d.suggestions)) : [];
+  if (d.teamMeta) teamMeta = JSON.parse(JSON.stringify(d.teamMeta));
+  suggestionLog = Array.isArray(d.suggestionLog) ? JSON.parse(JSON.stringify(d.suggestionLog)) : [];
+  const newAv = {};
+  Object.keys(d.avatars || {}).forEach(id => { const im = safeImage(d.avatars[id]); if (im) newAv[id] = im; });
+  avatars = newAv;
+  saveAvatarsLocal();
+  schedulePersist();
+  let problems = 0;
+  if (db) {
+    const jobs = [];
+    (d.perfVotes || []).forEach(x => { if (x && x.id && x.data) jobs.push(db.collection('perf-votes').doc(x.id).set(x.data)); });
+    (d.mvpVotes || []).forEach(x => { if (x && x.id && x.data) jobs.push(db.collection('mvp-votes').doc(x.id).set(x.data)); });
+    Object.keys(newAv).forEach(id => jobs.push(db.collection('avatars').doc(id).set({ playerId: id, image: newAv[id], updatedAt: new Date().toISOString() })));
+    const res = await Promise.allSettled(jobs);
+    problems = res.filter(r => r.status === 'rejected').length;
+  } else {
+    const pv = {}; (d.perfVotes || []).forEach(x => { if (x && x.id && x.data) pv[x.id] = x.data; });
+    const mv = {}; (d.mvpVotes || []).forEach(x => { if (x && x.id && x.data) mv[x.id] = x.data; });
+    saveLocalVotes(pv); saveLocalMvp(mv);
+  }
+  renderAll();
+  refreshAvatarViews();
+  if (note) note.textContent = problems ? `Ripristino completato, ma ${problems} elementi non sono stati scritti nel database: riprova.` : 'Ripristino completato ✓';
+}
+
+// ---- PIN amministratore (blocco leggero) ----
+async function pinHashOf(pin, salt) {
+  const data = new TextEncoder().encode(salt + ':' + pin);
+  if (window.crypto && crypto.subtle) {
+    const buf = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+  let h = 5381; for (const b of data) h = ((h * 33) ^ b) >>> 0;
+  return 'x' + h.toString(16);
+}
+function pinUnlocked() {
+  if (!pinInfo) return true;
+  try { return localStorage.getItem(PIN_OK_KEY) === pinInfo.hash; } catch (e) { return false; }
+}
+function removePinGate() { const g = document.getElementById('pin-gate'); if (g) g.remove(); document.body.style.overflow = ''; }
+function checkPinGate() {
+  if (isVoteOnlyMode || pinUnlocked()) { removePinGate(); return; }
+  if (document.getElementById('pin-gate')) return;
+  const g = document.createElement('div');
+  g.className = 'pin-gate'; g.id = 'pin-gate';
+  g.innerHTML = `<form class="pin-box" onsubmit="submitPin(event)">
+    <div class="pin-ico">🔒</div><h2>Area amministratore</h2>
+    <p>Inserisci il PIN per modificare squadre, rosa e partite.</p>
+    <input type="password" id="pin-input" inputmode="numeric" autocomplete="current-password" maxlength="8" placeholder="••••" autofocus>
+    <div class="pin-err" id="pin-err"></div>
+    <button type="submit" class="btn-primary">Entra</button>
+    <a class="pin-guest" href="vota.html">Sono un amico: vai a votare</a></form>`;
+  document.body.appendChild(g);
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => { const i = document.getElementById('pin-input'); if (i) i.focus(); }, 50);
+}
+let pinFails = 0, pinBlockedUntil = 0;
+async function submitPin(e) {
+  e.preventDefault();
+  const err = document.getElementById('pin-err'), inp = document.getElementById('pin-input');
+  if (Date.now() < pinBlockedUntil) { err.textContent = 'Troppi tentativi: aspetta qualche secondo.'; return; }
+  const h = await pinHashOf(inp.value.trim(), pinInfo.salt);
+  if (h === pinInfo.hash) {
+    try { localStorage.setItem(PIN_OK_KEY, pinInfo.hash); } catch (e2) {}
+    pinFails = 0; removePinGate();
+  } else {
+    pinFails++; inp.value = '';
+    if (pinFails >= 3) { pinBlockedUntil = Date.now() + 15000; pinFails = 0; err.textContent = 'PIN errato. Riprova tra 15 secondi.'; }
+    else err.textContent = 'PIN errato.';
+  }
+}
+function pinNote(t) { const n = document.getElementById('pin-note'); if (n) { n.style.display = 'block'; n.textContent = t; } }
+function updatePinUi() {
+  const st = document.getElementById('pin-status');
+  if (!st) return;
+  st.textContent = pinInfo ? 'PIN attivo: chi apre questa pagina da un dispositivo nuovo deve inserirlo. Gli amici usano la pagina di voto e non lo vedono.' : 'Nessun PIN impostato: chiunque abbia il link di questa pagina può modificare i dati.';
+  const lk = document.getElementById('pin-lock-btn'), rm = document.getElementById('pin-remove-btn');
+  if (lk) lk.style.display = pinInfo ? '' : 'none';
+  if (rm) rm.style.display = pinInfo ? '' : 'none';
+}
+async function savePin() {
+  const inp = document.getElementById('pin-new');
+  const v = (inp.value || '').trim();
+  if (!/^\d{4,8}$/.test(v)) { pinNote('Il PIN deve avere da 4 a 8 cifre.'); return; }
+  const salt = Array.from(crypto.getRandomValues(new Uint8Array(8))).map(b => b.toString(16).padStart(2, '0')).join('');
+  pinInfo = { salt, hash: await pinHashOf(v, salt) };
+  try { localStorage.setItem(PIN_LOCAL_KEY, JSON.stringify(pinInfo)); localStorage.setItem(PIN_OK_KEY, pinInfo.hash); } catch (e) {}
+  inp.value = '';
+  schedulePersist();
+  updatePinUi();
+  pinNote('PIN salvato. Questo dispositivo resta sbloccato; gli altri lo chiederanno.');
+}
+function removePin() {
+  if (!window.confirm('Rimuovere il PIN? Chiunque abbia il link potrà modificare i dati.')) return;
+  pinInfo = null;
+  try { localStorage.removeItem(PIN_LOCAL_KEY); localStorage.removeItem(PIN_OK_KEY); } catch (e) {}
+  schedulePersist(); updatePinUi(); pinNote('PIN rimosso.');
+}
+function lockNow() {
+  try { localStorage.removeItem(PIN_OK_KEY); } catch (e) {}
+  checkPinGate();
+}
+
+// ---- Temi ----
+const THEMES = [
+  ['auto', 'Automatico', 'linear-gradient(135deg,#f3f5fa 50%,#101830 50%)'],
+  ['light', 'Chiaro', 'linear-gradient(135deg,#f3f5fa 50%,#1d4ed8 50%)'],
+  ['dark', 'Scuro', 'linear-gradient(135deg,#101830 50%,#7aa5ff 50%)'],
+  ['campo', 'Campo', 'linear-gradient(135deg,#e7f0e3 50%,#15803d 50%)'],
+  ['tramonto', 'Tramonto', 'linear-gradient(135deg,#2a1d40 50%,#ff8a5b 50%)'],
+  ['mezzanotte', 'Mezzanotte', 'linear-gradient(135deg,#000 50%,#38d6c4 50%)']
+];
+const THEME_KEY = 'squadre-theme-v1';
+function currentThemeId() { return document.documentElement.getAttribute('data-theme') || 'auto'; }
+function applyTheme(id) {
+  const root = document.documentElement;
+  if (!id || id === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', id);
+  try { localStorage.setItem(THEME_KEY, id || 'auto'); } catch (e) {}
+  const m = document.querySelector('meta[name="theme-color"]');
+  if (m) { const c = getComputedStyle(root).getPropertyValue('--nav-bg').trim(); if (c) m.setAttribute('content', c); }
+  renderThemePop();
+}
+function renderThemePop() {
+  const pop = document.getElementById('theme-pop');
+  if (!pop) return;
+  const cur = currentThemeId();
+  pop.innerHTML = '<h4>Tema</h4>' + THEMES.map(t => `<button type="button" role="menuitemradio" aria-checked="${t[0] === cur}" class="${t[0] === cur ? 'on' : ''}" onclick="applyTheme('${t[0]}')"><i style="background:${t[2]}"></i>${t[1]}${t[0] === cur ? '<em>✓</em>' : ''}</button>`).join('');
+}
+document.addEventListener('click', e => {
+  const pop = document.getElementById('theme-pop');
+  if (!pop) return;
+  if (e.target.closest('#theme-btn')) { pop.classList.toggle('open'); renderThemePop(); return; }
+  if (!e.target.closest('#theme-pop')) pop.classList.remove('open');
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { const p = document.getElementById('theme-pop'); if (p) p.classList.remove('open'); } });
+renderThemePop();
+applyTheme(currentThemeId());
+updateBackupNote();
+updatePinUi();
+checkPinGate();
 document.addEventListener('DOMContentLoaded', applyTab);
 window.addEventListener('load', applyTab);
 initMatchDate();
