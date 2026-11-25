@@ -378,6 +378,7 @@ body.tab-not-home .hero { padding-bottom: 26px; }
 .pin-box input { width: 100%; text-align: center; font-size: 28px; letter-spacing: .5em; padding: 12px 8px; margin-bottom: 12px; }
 .pin-box button { width: 100%; }
 .pin-err { color: var(--danger); font-size: 14px; min-height: 20px; margin: 4px 0 8px; font-weight: 600; }
+.pin-guest-btn { display: block; margin-top: 14px; padding: 13px 16px; border-radius: 999px; border: 2px solid var(--accent); color: var(--accent); font-weight: 700; font-size: 15px; text-decoration: none; }
 .pin-guest { display: inline-block; margin-top: 18px; font-size: 14px; color: var(--accent); font-weight: 600; }
 .admin-sub { margin: 16px 0 6px; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }
 .dash-nudge { margin: 12px 0 0; }
@@ -3895,8 +3896,11 @@ function pinUnlocked() {
   try { return localStorage.getItem(PIN_OK_KEY) === pinInfo.hash; } catch (e) { return false; }
 }
 function removePinGate() { const g = document.getElementById('pin-gate'); if (g) g.remove(); document.body.style.overflow = ''; }
+const FRIEND_KEY = 'squadre-friend-v1';
 function checkPinGate() {
+  try { if (new URLSearchParams(location.search).get('admin') === '1') localStorage.removeItem(FRIEND_KEY); } catch (e) {}
   if (isVoteOnlyMode || pinUnlocked()) { removePinGate(); return; }
+  try { if (localStorage.getItem(FRIEND_KEY) === '1') { location.replace('vota.html' + location.search.replace(/[?&]admin=1/, '')); return; } } catch (e) {}
   if (document.getElementById('pin-gate')) return;
   const g = document.createElement('div');
   g.className = 'pin-gate'; g.id = 'pin-gate';
@@ -3906,7 +3910,7 @@ function checkPinGate() {
     <input type="password" id="pin-input" inputmode="numeric" autocomplete="current-password" maxlength="8" placeholder="••••" autofocus>
     <div class="pin-err" id="pin-err"></div>
     <button type="submit" class="btn-primary">Entra</button>
-    <a class="pin-guest" href="vota.html">Sono un amico: vai a votare</a></form>`;
+    <a class="pin-guest-btn" href="vota.html" onclick="try{localStorage.setItem('squadre-friend-v1','1')}catch(e){}">Sono un amico: vai a votare</a></form>`;
   document.body.appendChild(g);
   document.body.style.overflow = 'hidden';
   setTimeout(() => { const i = document.getElementById('pin-input'); if (i) i.focus(); }, 50);
