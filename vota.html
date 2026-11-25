@@ -382,6 +382,33 @@ body.tab-not-home .hero { padding-bottom: 26px; }
 .admin-sub { margin: 16px 0 6px; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }
 .dash-nudge { margin: 12px 0 0; }
 .dash-nudge button { background: var(--pop-soft); color: var(--text); border: 1px solid var(--pop); border-radius: 999px; padding: 9px 16px; font-size: 13.5px; font-weight: 600; box-shadow: none; width: 100%; text-align: left; cursor: pointer; }
+/* Movimento: transizioni, toast, skeleton */
+.wrap { overflow-x: clip; }
+@keyframes tabIn { from { opacity: 0; transform: translateX(var(--dx, 0px)) scale(.985); } to { opacity: 1; transform: none; } }
+.tab-enter { animation: tabIn .34s calc(var(--i, 0) * 55ms) cubic-bezier(.2,.75,.2,1) both; }
+@keyframes icoPop { 0% { transform: scale(.8); } 55% { transform: translateY(-3px) scale(1.28); } 100% { transform: translateY(-1px) scale(1.08); } }
+.bottombar button { transition: background .22s, color .22s; }
+.bottombar button.active .bb-ico { animation: icoPop .38s cubic-bezier(.3,.8,.3,1); }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sheetUp { from { opacity: 0; transform: translateY(26px) scale(.97); } to { opacity: 1; transform: none; } }
+.pmodal:not([hidden]) { animation: fadeIn .22s ease-out; }
+.pmodal:not([hidden]) > * { animation: sheetUp .32s cubic-bezier(.2,.8,.2,1); }
+@keyframes shimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+.skel { height: 112px; border-radius: 20px; background: linear-gradient(100deg, var(--surface-2) 30%, var(--surface) 50%, var(--surface-2) 70%); background-size: 220% 100%; animation: shimmer 1.3s infinite linear; border: 1px solid var(--border); }
+.skel.wide { grid-column: 1 / -1; height: 150px; }
+.toasts { position: fixed; left: 0; right: 0; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 400; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; padding: 0 16px; }
+@media (max-width: 719px) { .toasts { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); } }
+.toast { pointer-events: auto; max-width: 440px; background: var(--nav-bg); color: #fff; border-radius: 999px; padding: 12px 20px; font-size: 14.5px; font-weight: 600; box-shadow: 0 12px 30px -8px rgba(0,0,0,.5); border: 1px solid rgba(255,255,255,.14); display: flex; align-items: center; gap: 10px; animation: toastIn .34s cubic-bezier(.2,.9,.3,1.2) both; cursor: pointer; }
+.toast.out { animation: toastOut .26s ease-in both; }
+.toast .t-ic { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; flex: none; background: var(--pop); color: var(--pop-ink); }
+.toast.err .t-ic { background: var(--danger); color: #fff; }
+.toast.info .t-ic { background: rgba(255,255,255,.22); color: #fff; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(20px) scale(.92); } to { opacity: 1; transform: none; } }
+@keyframes toastOut { to { opacity: 0; transform: translateY(12px) scale(.95); } }
+@media (hover: hover) { .team-card.rk:hover, .dash-tile:hover { transform: translateY(-2px); } .dash-tile, .team-card.rk { transition: transform .18s; } }
+@media (prefers-reduced-motion: reduce) {
+  .tab-enter, .toast, .skel, .pmodal:not([hidden]), .pmodal:not([hidden]) > *, .bottombar button.active .bb-ico { animation: none !important; }
+}
 </style>
 </head>
 <body>
@@ -396,6 +423,7 @@ body.tab-not-home .hero { padding-bottom: 26px; }
   </div>
 </nav>
 <div class="theme-pop" id="theme-pop" role="menu" aria-label="Temi"></div>
+<div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
 <nav class="bottombar" id="bottombar" aria-label="Schede"></nav>
 <header class="hero" id="top">
   <div class="hero-in">
@@ -409,7 +437,7 @@ body.tab-not-home .hero { padding-bottom: 26px; }
 </header>
 <div class="wrap">
 
-  <section class="dash" id="dash-section" aria-label="In breve"><div class="dash-grid" id="dash-grid"></div><div class="dash-nudge" id="backup-nudge" style="display:none;"></div></section>
+  <section class="dash" id="dash-section" aria-label="In breve"><div class="dash-grid" id="dash-grid"><div class="skel wide"></div><div class="skel"></div><div class="skel"></div></div><div class="dash-nudge" id="backup-nudge" style="display:none;"></div></section>
 
   <section class="card" id="roster-section">
     <h2><span class="step-num">1</span>Rosa giocatori</h2>
@@ -767,6 +795,7 @@ let swapSelection = null;
 let db = null;
 let dbSaveInFlight = null;
 let dbSaveDirty = false;
+let syncDone = false;
 const PIN_LOCAL_KEY = 'squadre-pin-v1', PIN_OK_KEY = 'squadre-pin-ok-v1', LASTBACKUP_KEY = 'squadre-lastbackup-v1';
 let pinInfo = (() => { try { return JSON.parse(localStorage.getItem(PIN_LOCAL_KEY) || 'null'); } catch (e) { return null; } })();
 
@@ -1563,6 +1592,7 @@ function saveMatch() {
   }
   note.style.color = 'var(--accent)';
   note.textContent = 'Partita salvata il ' + new Date().toLocaleDateString('it-IT');
+  toast('Partita salvata ✓');
   note.style.display = 'block';
   setTimeout(() => { note.style.display = 'none'; }, 3000);
 }
@@ -2210,12 +2240,14 @@ async function submitPerformanceVotes() {
       await db.collection('perf-votes').doc(m.id + '__' + selfId).set(payload);
       note.style.color = 'var(--accent)';
       note.textContent = 'Voti inviati, grazie!';
+      toast('Voti inviati, grazie!');
       votedMatches[m.id] = { raterId: selfId, raterName, votedAt: new Date().toISOString() };
       saveVotedMatches();
       applyVoteLockState();
     } catch (e) {
       note.style.color = 'var(--danger)';
       note.textContent = 'Invio non riuscito, riprova.';
+      toast('Invio non riuscito, riprova.', 'err');
     }
   } else {
     const local = loadLocalVotes();
@@ -2223,6 +2255,7 @@ async function submitPerformanceVotes() {
     saveLocalVotes(local);
     note.style.color = 'var(--accent)';
     note.textContent = 'Voti salvati su questo dispositivo, grazie!';
+    toast('Voti salvati su questo dispositivo, grazie!');
     renderVoteResults(m.id, Object.values(local).filter(v => v.matchId === m.id));
     renderOverallPerformance(computeOverallPerformance(Object.values(local)));
     votedMatches[m.id] = { raterId: selfId, raterName, votedAt: new Date().toISOString() };
@@ -2320,6 +2353,7 @@ async function submitMvpVote() {
     note.style.color = ok ? 'var(--accent)' : 'var(--danger)';
     note.textContent = msg;
     note.style.display = 'block';
+    toast(msg, ok ? 'ok' : 'err');
     setTimeout(() => { note.style.display = 'none'; }, 3500);
   };
   const voterId = sel.value;
@@ -2477,7 +2511,7 @@ function avatarUpload(id, input) {
   const file = input.files && input.files[0];
   input.value = '';
   if (!id || !file || isVoteOnlyMode) return;
-  const say = msg => { const el = document.getElementById('pm-note'); if (el) { el.textContent = msg; el.style.display = 'block'; } };
+  const say = msg => { const el = document.getElementById('pm-note'); if (el) { el.textContent = msg; el.style.display = 'block'; } toast(msg, /non |pieno|solo su questo/.test(msg) ? 'err' : 'ok'); };
   const reader = new FileReader();
   reader.onload = () => {
     const img = new Image();
@@ -3220,6 +3254,7 @@ function renderDash() {
   updateBackupNudge();
   const played = matches.filter(matchHasResult).sort((a, b) => new Date(b.date) - new Date(a.date));
   if (played.length === 0) {
+    if (!syncDone) { grid.innerHTML = '<div class="skel wide"></div><div class="skel"></div><div class="skel"></div>'; return; }
     grid.innerHTML = `<div class="dash-tile wide"><div class="dash-ico">⚽</div><div class="dash-label">In breve</div><div class="dash-sub" style="margin-top:6px;">Salva la prima partita con il risultato: qui compariranno gli ultimi numeri del gruppo.</div></div>`;
     return;
   }
@@ -3573,9 +3608,11 @@ function applyTab() {
 }
 function switchTab(id, noScroll) {
   if (!tabsAvailable().some(t => t[0] === id)) id = 'home';
+  const prevTab = currentTab;
   currentTab = id;
   try { localStorage.setItem(tabKey(), id); } catch (e) {}
   applyTab();
+  tabAnimate(prevTab, id);
   if (!noScroll) window.scrollTo({ top: 0, behavior: 'auto' });
 }
 function buildTabs() {
@@ -3766,6 +3803,7 @@ async function downloadBackup() {
     setTimeout(() => URL.revokeObjectURL(url), 2000);
     try { localStorage.setItem(LASTBACKUP_KEY, String(Date.now())); } catch (e) {}
     updateBackupNote(); updateBackupNudge();
+    toast('Backup scaricato ✓');
     if (note) note.textContent = `Backup scaricato: ${payload.roster.length} giocatori, ${payload.matches.length} partite, ${payload.perfVotes.length} voti, ${Object.keys(payload.avatars || {}).length} foto. Conservalo in un posto sicuro (Drive, email a te stesso).`;
   } catch (e) {
     console.error('Errore creando il backup:', e);
@@ -3813,6 +3851,7 @@ async function restoreBackup(input) {
   renderAll();
   refreshAvatarViews();
   if (note) note.textContent = problems ? `Ripristino completato, ma ${problems} elementi non sono stati scritti nel database: riprova.` : 'Ripristino completato ✓';
+  toast(problems ? 'Ripristino con errori, riprova' : 'Ripristino completato ✓', problems ? 'err' : 'ok');
 }
 
 // ---- PIN amministratore (blocco leggero) ----
@@ -3881,12 +3920,13 @@ async function savePin() {
   schedulePersist();
   updatePinUi();
   pinNote('PIN salvato. Questo dispositivo resta sbloccato; gli altri lo chiederanno.');
+  toast('PIN salvato 🔒');
 }
 function removePin() {
   if (!window.confirm('Rimuovere il PIN? Chiunque abbia il link potrà modificare i dati.')) return;
   pinInfo = null;
   try { localStorage.removeItem(PIN_LOCAL_KEY); localStorage.removeItem(PIN_OK_KEY); } catch (e) {}
-  schedulePersist(); updatePinUi(); pinNote('PIN rimosso.');
+  schedulePersist(); updatePinUi(); pinNote('PIN rimosso.'); toast('PIN rimosso', 'info');
 }
 function lockNow() {
   try { localStorage.removeItem(PIN_OK_KEY); } catch (e) {}
@@ -3929,6 +3969,63 @@ renderThemePop();
 applyTheme(currentThemeId());
 updateBackupNote();
 updatePinUi();
+// ---- Movimento: animazione tra schede, swipe, toast ----
+function tabAnimate(prev, next) {
+  if (prev === next || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+  const order = TABS.map(t => t[0]);
+  const dir = order.indexOf(next) > order.indexOf(prev) ? 1 : -1;
+  const t = TABS.find(x => x[0] === next);
+  if (!t) return;
+  const els = t[3].filter(id => id !== 'dash-section').map(id => document.getElementById(id)).filter(el => el && el.offsetParent !== null);
+  const tools = document.getElementById('sec-tools');
+  if (tools && tools.offsetParent !== null) els.unshift(tools);
+  els.forEach((el, i) => {
+    el.style.setProperty('--dx', (dir * 30) + 'px');
+    el.style.setProperty('--i', i);
+    el.classList.remove('tab-enter'); void el.offsetWidth; el.classList.add('tab-enter');
+  });
+  setTimeout(() => els.forEach(el => el.classList.remove('tab-enter')), 900);
+}
+function hScrollable(el) {
+  for (let n = el; n && n !== document.body; n = n.parentElement) {
+    if (n.scrollWidth > n.clientWidth + 4) { const ox = getComputedStyle(n).overflowX; if (ox === 'auto' || ox === 'scroll') return true; }
+  }
+  return false;
+}
+(function initSwipe() {
+  let sx = 0, sy = 0, t0 = 0, ok = false;
+  document.addEventListener('touchstart', e => {
+    ok = false;
+    if (e.touches.length !== 1 || window.innerWidth >= 720) return;
+    const t = e.target;
+    if (!t.closest || t.closest('input,select,textarea,canvas,video,iframe,.pmodal,#pin-gate,[data-noswipe]') || hScrollable(t)) return;
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY; t0 = Date.now();
+    ok = sx > 24 && sx < window.innerWidth - 24;
+  }, { passive: true });
+  document.addEventListener('touchend', e => {
+    if (!ok) return; ok = false;
+    const c = e.changedTouches[0], dx = c.clientX - sx, dy = c.clientY - sy;
+    if (Date.now() - t0 > 650 || Math.abs(dx) < 90 || Math.abs(dy) > Math.abs(dx) * 0.5) return;
+    const list = tabsAvailable().map(t => t[0]);
+    const i = list.indexOf(currentTab) + (dx < 0 ? 1 : -1);
+    if (i >= 0 && i < list.length) switchTab(list[i]);
+  }, { passive: true });
+})();
+function toast(msg, kind) {
+  const box = document.getElementById('toasts');
+  if (!box || !msg) return;
+  while (box.children.length >= 3) box.firstChild.remove();
+  const el = document.createElement('div');
+  el.className = 'toast ' + (kind || 'ok');
+  el.setAttribute('role', 'status');
+  const ic = kind === 'err' ? '!' : kind === 'info' ? 'i' : '✓';
+  el.innerHTML = `<span class="t-ic">${ic}</span><span></span>`;
+  el.lastChild.textContent = String(msg).replace(/^✓\s*/, '').replace(/\s*✓$/, '');
+  box.appendChild(el);
+  const kill = () => { if (!el.parentNode) return; el.classList.add('out'); setTimeout(() => el.remove(), 280); };
+  el.addEventListener('click', kill);
+  setTimeout(kill, kind === 'err' ? 4500 : 2800);
+}
 checkPinGate();
 document.addEventListener('DOMContentLoaded', applyTab);
 window.addEventListener('load', applyTab);
@@ -3938,6 +4035,8 @@ populateVoteMatchSelect();
 onVoteMatchChange();
 updateVoteModeNote();
 initSync().finally(() => {
+  syncDone = true;
+  try { renderDash(); } catch (e) {}
   populateVoteMatchSelect();
   onVoteMatchChange();
   updateVoteModeNote();
