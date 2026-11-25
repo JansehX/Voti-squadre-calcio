@@ -4062,7 +4062,7 @@ function notifyLastMatch() {
   const m = played[0], sc = pmScore(m), nm = m.teamNames || { A: 'Squadra A', B: 'Squadra B' };
   if (window.confirm(`Avvisare tutti del risultato ${nm.A} ${sc.a} – ${sc.b} ${nm.B}?`)) sendPushForMatch(m);
 }
-function testPush() { sendPush({ title: '🔔 Notifica di prova', body: 'Se leggi questo, le notifiche funzionano.', url: './', tag: 'prova' }); }
+function testPush() { sendPush({ title: '🔔 Notifica di prova', body: 'Se leggi questo, le notifiche funzionano.', url: './vota.html?tab=vota', tag: 'prova' }); }
 
 // ---- Temi ----
 const THEMES = [
