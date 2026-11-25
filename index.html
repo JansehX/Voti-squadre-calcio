@@ -437,7 +437,7 @@ body.tab-not-home .hero { padding-bottom: 26px; }
 </header>
 <div class="wrap">
 
-  <section class="dash" id="dash-section" aria-label="In breve"><div class="dash-grid" id="dash-grid"><div class="skel wide"></div><div class="skel"></div><div class="skel"></div></div><div class="dash-nudge" id="backup-nudge" style="display:none;"></div></section>
+  <section class="dash" id="dash-section" aria-label="In breve"><div class="dash-grid" id="dash-grid"><div class="skel wide"></div><div class="skel"></div><div class="skel"></div></div><div class="dash-nudge" id="backup-nudge" style="display:none;"></div><div class="dash-nudge" id="push-card" style="display:none;"></div></section>
 
   <section class="card" id="roster-section">
     <h2><span class="step-num">1</span>Rosa giocatori</h2>
@@ -452,7 +452,7 @@ body.tab-not-home .hero { padding-bottom: 26px; }
       <p class="hint" style="margin-top:8px;">Visibile solo qui, non nella pagina di voto condivisa con gli amici.</p>
       <div class="admin-sub">Backup</div>
       <p class="hint">Il backup completo contiene rosa, partite, voti, MVP e foto. Scaricalo ogni tanto: se il database si rovina puoi ripristinare tutto da qui.</p>
-      <div class="row" style="gap:8px; margin-top:6px;">
+      <div class="row wrap-row" style="gap:8px; margin-top:6px;">
         <button class="btn-primary" onclick="downloadBackup()">Scarica backup completo</button>
         <button class="btn-ghost" onclick="document.getElementById('restore-file').click()">Ripristina da backup</button>
         <input type="file" id="restore-file" accept=".json,application/json" style="display:none;" onchange="restoreBackup(this)">
@@ -460,13 +460,25 @@ body.tab-not-home .hero { padding-bottom: 26px; }
       <p class="hint" id="backup-note"></p>
       <div class="admin-sub">PIN amministratore</div>
       <p class="hint" id="pin-status"></p>
-      <div class="row" style="gap:8px;">
+      <div class="row wrap-row" style="gap:8px;">
         <input type="password" id="pin-new" inputmode="numeric" autocomplete="new-password" maxlength="8" placeholder="Nuovo PIN (4–8 cifre)" style="max-width:220px;">
         <button class="btn-ghost" onclick="savePin()">Salva PIN</button>
         <button class="btn-ghost" id="pin-lock-btn" onclick="lockNow()">Blocca ora</button>
         <button class="btn-danger-ghost" id="pin-remove-btn" onclick="removePin()">Rimuovi PIN</button>
       </div>
       <p class="hint" id="pin-note" style="display:none;"></p>
+      <div class="admin-sub">Notifiche</div>
+      <p class="hint" id="push-count"></p>
+      <div class="row wrap-row" style="gap:8px;">
+        <input type="url" id="push-url" placeholder="Indirizzo del servizio (https://...workers.dev)" style="flex:1; min-width:220px;">
+        <input type="password" id="push-token" autocomplete="off" placeholder="Password notifiche" style="max-width:200px;">
+        <button class="btn-ghost" onclick="savePushSettings()">Salva</button>
+      </div>
+      <div class="row" style="gap:8px; margin-top:8px;">
+        <button class="btn-ghost" onclick="testPush()">Invia notifica di prova</button>
+        <button class="btn-ghost" onclick="notifyLastMatch()">Avvisa risultato ultima partita</button>
+      </div>
+      <p class="hint" id="push-note" style="display:none;"></p>
       <div class="admin-sub">Voti</div>
       <div class="row" style="gap:8px; margin-top:6px;">
         <button class="btn-danger-ghost" onclick="clearAllVotesClick()">Cancella tutti i voti</button>
@@ -796,6 +808,9 @@ let db = null;
 let dbSaveInFlight = null;
 let dbSaveDirty = false;
 let syncDone = false;
+const VAPID_PUBLIC = 'BCLYPEmyC5oYVFCXUqcmYwx8q6XR1VCMKXR3rGVFbjLKeJeV26pewvqvWH6lT1SBWHeRk9VaRNMNzENio7g7D6w';
+const PUSH_URL_KEY = 'squadre-pushurl-v1', PUSH_TOKEN_KEY = 'squadre-pushtoken-v1';
+let pushUrl = (() => { try { return localStorage.getItem(PUSH_URL_KEY) || ''; } catch (e) { return ''; } })();
 const PIN_LOCAL_KEY = 'squadre-pin-v1', PIN_OK_KEY = 'squadre-pin-ok-v1', LASTBACKUP_KEY = 'squadre-lastbackup-v1';
 let pinInfo = (() => { try { return JSON.parse(localStorage.getItem(PIN_LOCAL_KEY) || 'null'); } catch (e) { return null; } })();
 
@@ -813,6 +828,7 @@ function schedulePersist() {
   dbSaveInFlight = db.doc('app/state').set({
     roster, weights, matches, suggestions, teamMeta, suggestionLog,
     pinHash: pinInfo ? pinInfo.hash : null, pinSalt: pinInfo ? pinInfo.salt : null,
+    pushUrl: pushUrl || null,
     updatedAt: new Date().toISOString()
   }).catch(() => {}).finally(() => {
     dbSaveInFlight = null;
@@ -857,8 +873,10 @@ async function initSync() {
       if (Array.isArray(data.suggestionLog)) suggestionLog = JSON.parse(JSON.stringify(data.suggestionLog));
       pinInfo = (data.pinHash && data.pinSalt) ? { hash: data.pinHash, salt: data.pinSalt } : null;
       try { if (pinInfo) localStorage.setItem(PIN_LOCAL_KEY, JSON.stringify(pinInfo)); else localStorage.removeItem(PIN_LOCAL_KEY); } catch (e) {}
+      if (typeof data.pushUrl === 'string' && data.pushUrl) { pushUrl = data.pushUrl; try { localStorage.setItem(PUSH_URL_KEY, pushUrl); } catch (e) {} }
       renderAll();
       checkPinGate();
+      updatePushUi();
       updatePinUi();
     } else {
       schedulePersist();
@@ -2009,11 +2027,17 @@ function saveMatchEdit(id) {
     if (isNaN(assists) || assists < 0) assists = 0;
     newEntries[p.id] = { goals, assists, og, mvp: !!(mvpInput && mvpInput.checked) };
   });
+  const hadResult = matchHasResult(m), before = hadResult ? JSON.stringify(pmScore(m)) : null;
   m.entries = newEntries;
   saveMatches();
   editingMatchId = null;
   renderHistory();
   renderRankings();
+  const nowResult = matchHasResult(m);
+  if (nowResult && JSON.stringify(pmScore(m)) !== before && pushReady()) {
+    const sc = pmScore(m), nm = m.teamNames || { A: 'Squadra A', B: 'Squadra B' };
+    if (window.confirm(`Il risultato è ${nm.A} ${sc.a} – ${sc.b} ${nm.B}.\n\nAvvisare tutti con una notifica?`)) sendPushForMatch(m);
+  }
 }
 function deleteMatch(id) {
   if (isVoteOnlyMode) return;
@@ -3623,6 +3647,7 @@ function buildTabs() {
   if (bar) bar.innerHTML = list.map(t => `<button type="button" data-tab="${t[0]}" aria-label="${t[1]}"><span class="bb-ico">${t[2]}</span><span class="bb-lbl">${t[1]}</span></button>`).join('');
   let saved = 'home';
   try { saved = localStorage.getItem(tabKey()) || 'home'; } catch (e) {}
+  try { const q = new URLSearchParams(location.search).get('tab'); if (q && list.some(t => t[0] === q)) saved = q; } catch (e) {}
   currentTab = list.some(t => t[0] === saved) ? saved : 'home';
   applyTab();
 }
@@ -3934,6 +3959,108 @@ function lockNow() {
   checkPinGate();
 }
 
+
+// ---- Notifiche push (servizio su Cloudflare Worker) ----
+function pushReady() { return !isVoteOnlyMode && !!pushUrl && !!pushToken(); }
+function pushToken() { try { return localStorage.getItem(PUSH_TOKEN_KEY) || ''; } catch (e) { return ''; } }
+function pushSupported() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; }
+function isIosDevice() { return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+function isStandalone() { return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; }
+function b64uToBytes(str) { const p = str.replace(/-/g, '+').replace(/_/g, '/'); const s = atob(p.padEnd(Math.ceil(p.length / 4) * 4, '=')); return Uint8Array.from(s, c => c.charCodeAt(0)); }
+async function sha256Hex(t) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, '0')).join('').slice(0, 40); }
+async function pushCurrentSub() {
+  try { if (!pushSupported()) return null; const reg = await navigator.serviceWorker.getRegistration(); return reg ? await reg.pushManager.getSubscription() : null; } catch (e) { return null; }
+}
+async function updatePushCard() {
+  const card = document.getElementById('push-card');
+  if (!card) return;
+  if (!pushUrl || !/^https?:$/.test(location.protocol)) { card.style.display = 'none'; return; }
+  if (!pushSupported()) {
+    if (isIosDevice() && !isStandalone()) { card.style.display = 'block'; card.innerHTML = '<button type="button" onclick="toast(\'Su iPhone: tocca Condividi e poi Aggiungi alla schermata Home, poi apri l\\u2019app da lì\', \'info\')">🔔 Per ricevere le notifiche installa l\'app dalla schermata Home</button>'; }
+    else card.style.display = 'none';
+    return;
+  }
+  if (Notification.permission === 'denied') { card.style.display = 'block'; card.innerHTML = '<button type="button" onclick="toast(\'Riattiva le notifiche per questo sito dalle impostazioni del browser\', \'info\')">🔕 Notifiche bloccate: tocca per sapere come riattivarle</button>'; return; }
+  const sub = await pushCurrentSub();
+  if (sub && Notification.permission === 'granted') { card.style.display = 'block'; card.innerHTML = '<button type="button" style="background:var(--accent-soft); border-color:var(--accent);" onclick="disablePush()">🔔 Notifiche attive · tocca per disattivarle</button>'; return; }
+  card.style.display = 'block';
+  card.innerHTML = '<button type="button" onclick="enablePush()">🔔 Ricevi una notifica quando esce il risultato · Attiva</button>';
+}
+function updatePushUi() {
+  updatePushCard();
+  const u = document.getElementById('push-url'), t = document.getElementById('push-token');
+  if (u && document.activeElement !== u) u.value = pushUrl || '';
+  if (t && document.activeElement !== t && !t.value) t.placeholder = pushToken() ? 'Password salvata su questo dispositivo' : 'Password notifiche';
+  refreshPushCount();
+}
+async function refreshPushCount() {
+  const el = document.getElementById('push-count');
+  if (!el) return;
+  if (!pushUrl) { el.textContent = 'Servizio notifiche non ancora collegato. Inserisci qui sotto l\'indirizzo e la password.'; return; }
+  if (!db) { el.textContent = ''; return; }
+  try { const snap = await db.collection('push-subs').get(); el.textContent = snap.docs.length + ' dispositivi iscritti alle notifiche.'; } catch (e) { el.textContent = 'Non riesco a contare i dispositivi iscritti (controlla le regole di Firestore per "push-subs").'; }
+}
+async function enablePush() {
+  if (!db) { toast('Database non raggiungibile, riprova più tardi', 'err'); return; }
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') { toast('Notifiche non consentite', 'err'); updatePushCard(); return; }
+    await navigator.serviceWorker.register('sw.js');
+    const reg = await navigator.serviceWorker.ready;
+    const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uToBytes(VAPID_PUBLIC) });
+    const j = sub.toJSON();
+    await db.collection('push-subs').doc(await sha256Hex(j.endpoint)).set({ endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, role: isVoteOnlyMode ? 'amico' : 'admin', createdAt: new Date().toISOString() });
+    toast('Notifiche attivate 🔔');
+  } catch (e) {
+    console.error('Attivazione notifiche fallita:', e);
+    toast('Non sono riuscito ad attivare le notifiche', 'err');
+  }
+  updatePushCard();
+}
+async function disablePush() {
+  try {
+    const sub = await pushCurrentSub();
+    if (sub) { const ep = sub.endpoint; await sub.unsubscribe(); if (db) await db.collection('push-subs').doc(await sha256Hex(ep)).delete(); }
+    toast('Notifiche disattivate', 'info');
+  } catch (e) { toast('Non sono riuscito a disattivarle', 'err'); }
+  updatePushCard();
+}
+function pushNote(t) { const n = document.getElementById('push-note'); if (n) { n.style.display = 'block'; n.textContent = t; } }
+function savePushSettings() {
+  const u = document.getElementById('push-url'), t = document.getElementById('push-token');
+  let url = (u.value || '').trim().replace(/\/+$/, '');
+  if (url && !/^https:\/\/[^\s]+$/.test(url)) { pushNote('L\'indirizzo deve iniziare con https://'); return; }
+  pushUrl = url;
+  try { if (url) localStorage.setItem(PUSH_URL_KEY, url); else localStorage.removeItem(PUSH_URL_KEY); } catch (e) {}
+  if (t.value.trim()) { try { localStorage.setItem(PUSH_TOKEN_KEY, t.value.trim()); } catch (e) {} t.value = ''; }
+  schedulePersist();
+  updatePushUi();
+  pushNote('Salvato. L\'indirizzo si propaga agli amici; la password resta solo su questo dispositivo.');
+  toast('Impostazioni notifiche salvate');
+}
+async function sendPush(message) {
+  if (!pushReady()) { toast('Imposta prima indirizzo e password delle notifiche', 'err'); return null; }
+  try {
+    const res = await fetch(pushUrl + '/send', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + pushToken() }, body: JSON.stringify(message) });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) { toast(res.status === 401 ? 'Password notifiche errata' : (j.error || 'Invio non riuscito'), 'err'); return null; }
+    toast(`Notifica inviata a ${j.inviate} ${j.inviate === 1 ? 'dispositivo' : 'dispositivi'}` + (j.saltati ? ` (${j.saltati} non raggiunti: troppi iscritti)` : ''));
+    return j;
+  } catch (e) { toast('Servizio notifiche non raggiungibile', 'err'); return null; }
+}
+function sendPushForMatch(m) {
+  const sc = pmScore(m), nm = m.teamNames || { A: 'Squadra A', B: 'Squadra B' };
+  const d = new Date(m.date).toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
+  return sendPush({ title: `⚽ ${nm.A} ${sc.a} – ${sc.b} ${nm.B}`, body: `Partita del ${d}. Vota le prestazioni e l'MVP!`, url: './vota.html?tab=vota', tag: 'risultato-' + m.id });
+}
+function notifyLastMatch() {
+  const played = matches.filter(matchHasResult).sort((a, b) => new Date(b.date) - new Date(a.date));
+  if (!played.length) { toast('Nessuna partita con risultato', 'err'); return; }
+  const m = played[0], sc = pmScore(m), nm = m.teamNames || { A: 'Squadra A', B: 'Squadra B' };
+  if (window.confirm(`Avvisare tutti del risultato ${nm.A} ${sc.a} – ${sc.b} ${nm.B}?`)) sendPushForMatch(m);
+}
+function testPush() { sendPush({ title: '🔔 Notifica di prova', body: 'Se leggi questo, le notifiche funzionano.', url: './', tag: 'prova' }); }
+
 // ---- Temi ----
 const THEMES = [
   ['auto', 'Automatico', 'linear-gradient(135deg,#f3f5fa 50%,#101830 50%)'],
@@ -3970,6 +4097,7 @@ renderThemePop();
 applyTheme(currentThemeId());
 updateBackupNote();
 updatePinUi();
+updatePushUi();
 // ---- Movimento: animazione tra schede, swipe, toast ----
 function tabAnimate(prev, next) {
   if (prev === next || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
